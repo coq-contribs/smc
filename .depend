@@ -1,0 +1,51 @@
+univ.vo: univ.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo op.vo
+univ.vi: univ.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo op.vo
+tauto.vo: tauto.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo neg.vo or.vo op.vo
+tauto.vi: tauto.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo neg.vo or.vo op.vo
+smc.vo: smc.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo neg.vo or.vo univ.vo op.vo tauto.vo quant.vo gc.vo mu.vo munew.vo muset.vo
+smc.vi: smc.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo neg.vo or.vo univ.vo op.vo tauto.vo quant.vo gc.vo mu.vo munew.vo muset.vo
+quant.vo: quant.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo or.vo op.vo tauto.vo gc.vo univ.vo
+quant.vi: quant.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo or.vo op.vo tauto.vo gc.vo univ.vo
+or.vo: or.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo
+or.vi: or.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo
+op.vo: op.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo neg.vo or.vo
+op.vi: op.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo neg.vo or.vo
+neg.vo: neg.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo
+neg.vi: neg.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo
+myMap.vo: myMap.v misc.vo
+myMap.vi: myMap.v misc.vo
+mu.vo: mu.v myMap.vo misc.vo bool_fun.vo config.vo alloc.vo make.vo neg.vo or.vo univ.vo op.vo tauto.vo quant.vo gc.vo
+mu.vi: mu.v myMap.vo misc.vo bool_fun.vo config.vo alloc.vo make.vo neg.vo or.vo univ.vo op.vo tauto.vo quant.vo gc.vo
+muset.vo: muset.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo neg.vo or.vo univ.vo op.vo tauto.vo quant.vo gc.vo mu.vo munew.vo
+muset.vi: muset.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo neg.vo or.vo univ.vo op.vo tauto.vo quant.vo gc.vo mu.vo munew.vo
+munew.vo: munew.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo neg.vo or.vo univ.vo op.vo tauto.vo quant.vo gc.vo mu.vo
+munew.vi: munew.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo make.vo neg.vo or.vo univ.vo op.vo tauto.vo quant.vo gc.vo mu.vo
+misc.vo: misc.v
+misc.vi: misc.v
+make.vo: make.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo
+make.vi: make.v misc.vo bool_fun.vo myMap.vo config.vo alloc.vo
+gc.vo: gc.v misc.vo bool_fun.vo config.vo myMap.vo
+gc.vi: gc.v misc.vo bool_fun.vo config.vo myMap.vo
+config.vo: config.v misc.vo bool_fun.vo myMap.vo
+config.vi: config.v misc.vo bool_fun.vo myMap.vo
+bool_fun.vo: bool_fun.v misc.vo
+bool_fun.vi: bool_fun.v misc.vo
+alloc.vo: alloc.v misc.vo bool_fun.vo myMap.vo config.vo
+alloc.vi: alloc.v misc.vo bool_fun.vo myMap.vo config.vo
+univ.html: univ.v misc.html bool_fun.html myMap.html config.html alloc.html make.html op.html
+tauto.html: tauto.v misc.html bool_fun.html myMap.html config.html alloc.html make.html neg.html or.html op.html
+smc.html: smc.v misc.html bool_fun.html myMap.html config.html alloc.html make.html neg.html or.html univ.html op.html tauto.html quant.html gc.html mu.html munew.html muset.html
+quant.html: quant.v misc.html bool_fun.html myMap.html config.html alloc.html make.html or.html op.html tauto.html gc.html univ.html
+or.html: or.v misc.html bool_fun.html myMap.html config.html alloc.html make.html
+op.html: op.v misc.html bool_fun.html myMap.html config.html alloc.html make.html neg.html or.html
+neg.html: neg.v misc.html bool_fun.html myMap.html config.html alloc.html make.html
+myMap.html: myMap.v misc.html
+mu.html: mu.v myMap.html misc.html bool_fun.html config.html alloc.html make.html neg.html or.html univ.html op.html tauto.html quant.html gc.html
+muset.html: muset.v misc.html bool_fun.html myMap.html config.html alloc.html make.html neg.html or.html univ.html op.html tauto.html quant.html gc.html mu.html munew.html
+munew.html: munew.v misc.html bool_fun.html myMap.html config.html alloc.html make.html neg.html or.html univ.html op.html tauto.html quant.html gc.html mu.html
+misc.html: misc.v
+make.html: make.v misc.html bool_fun.html myMap.html config.html alloc.html
+gc.html: gc.v misc.html bool_fun.html config.html myMap.html
+config.html: config.v misc.html bool_fun.html myMap.html
+bool_fun.html: bool_fun.v misc.html
+alloc.html: alloc.v misc.html bool_fun.html myMap.html config.html
