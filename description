@@ -1,6 +1,7 @@
 Name: smc
 Title: BDD based symbolic model checker for the modal mu-calculus
-Author: Kumar Neeraj Verma (verma@lsv.ens-cachan.fr)
+Author: Kumar Neeraj Verma
+Email: verma@lsv.ens-cachan.fr
 Institution: LSV/Dyade/INRIA/IIT Delhi
 Date: November 2002
 Description: Provides BDD algorithms, a symbolic model checker for the modal
