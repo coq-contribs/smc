@@ -17,7 +17,7 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
+Require Import ZArith NArith Nnat Ndec Ndigits.
 Require Import Map.
 Require Import Allmaps.
 Require Import List.
@@ -41,7 +41,7 @@ Fixpoint ad_list_neq (l1 l2 : list ad) {struct l2} : bool :=
   match l1, l2 with
   | nil, _ => true
   | _, nil => true
-  | a1 :: l1', a2 :: l2' => negb (ad_eq a1 a2) && ad_list_neq l1' l2'
+  | a1 :: l1', a2 :: l2' => negb (Neqb a1 a2) && ad_list_neq l1' l2'
   end.
 
 Definition bool_to_be (b : bool) :=
@@ -98,7 +98,7 @@ Fixpoint subst (x : BDDvar) (bex be : bool_expr) {struct be} : bool_expr :=
   match be with
   | Zero => Zero
   | One => One
-  | Var y => if ad_eq x y then bex else be
+  | Var y => if Neqb x y then bex else be
   | Neg be1 => Neg (subst x bex be1)
   | Or be1 be2 => Or (subst x bex be1) (subst x bex be2)
   | ANd be1 be2 => ANd (subst x bex be1) (subst x bex be2)
@@ -113,7 +113,7 @@ Lemma subst_ok :
 Proof.
   simple induction be.  compute in |- *.  reflexivity.  compute in |- *.  reflexivity.  simpl in |- *.
   unfold bool_fun_subst in |- *.  unfold bool_fun_eq in |- *.  unfold augment in |- *.
-  unfold bool_fun_var in |- *.  intros.  elim (ad_eq x b).  reflexivity.  reflexivity.
+  unfold bool_fun_var in |- *.  intros.  elim (Neqb x b).  reflexivity.  reflexivity.
   simpl in |- *.  intros.
   apply
    bool_fun_eq_trans
@@ -189,7 +189,7 @@ Proof.
   unfold bool_fun_subst1, bool_fun_subst in |- *.  intros.  unfold bool_fun_eq in |- *.  intro.
   unfold bool_fun_iff in |- *.  unfold bool_fun_forall in |- *.  unfold bool_fun_restrict in |- *.
   unfold bool_fun_and, bool_fun_impl in |- *.  unfold bool_fun_var in |- *.  unfold augment at 1 4 in |- *.
-  rewrite (ad_eq_correct x).  simpl in |- *.  unfold bool_fun_independent in H.
+  rewrite (Neqb_correct x).  simpl in |- *.  unfold bool_fun_independent in H.
   unfold bool_fun_restrict in H.  unfold bool_fun_eq in H.
   rewrite (H true vb).  rewrite (H false vb).
   elim (sumbool_of_bool (bfx vb)).  intro y.  rewrite y.  simpl in |- *.
@@ -357,10 +357,10 @@ Hypothesis ul_OK : used_list_OK cfg ul.
 Hypothesis used : used_node' cfg ul node.
 
 Definition BDDuniv :=
-  BDDuniv_1 gc cfg ul node y (S (nat_of_ad (node_height cfg node))).
+  BDDuniv_1 gc cfg ul node y (S (nat_of_N (node_height cfg node))).
 
 Let lt_1 :
-  nat_of_ad (node_height cfg node) < S (nat_of_ad (node_height cfg node)).
+  nat_of_N (node_height cfg node) < S (nat_of_N (node_height cfg node)).
 Proof.
   unfold lt in |- *.  apply le_n.
 Qed.
@@ -369,7 +369,7 @@ Lemma BDDuniv_config_OK : BDDconfig_OK (fst BDDuniv).
 Proof.
 exact
  (proj1
-    (BDDuniv_1_lemma gc gc_is_OK (S (nat_of_ad (node_height cfg node))) cfg
+    (BDDuniv_1_lemma gc gc_is_OK (S (nat_of_N (node_height cfg node))) cfg
        ul y node lt_1 cfg_OK ul_OK used)).
 Qed.
 
@@ -378,7 +378,7 @@ Proof.
   exact
    (proj1
       (proj2
-         (BDDuniv_1_lemma gc gc_is_OK (S (nat_of_ad (node_height cfg node)))
+         (BDDuniv_1_lemma gc gc_is_OK (S (nat_of_N (node_height cfg node)))
             cfg ul y node lt_1 cfg_OK ul_OK used))).
 Qed.
 
@@ -390,7 +390,7 @@ Proof.
       (proj2
          (proj2
             (BDDuniv_1_lemma gc gc_is_OK
-               (S (nat_of_ad (node_height cfg node))) cfg ul y node lt_1
+               (S (nat_of_N (node_height cfg node))) cfg ul y node lt_1
                cfg_OK ul_OK used)))).
 Qed.
 
@@ -404,7 +404,7 @@ Proof.
          (proj2
             (proj2
                (BDDuniv_1_lemma gc gc_is_OK
-                  (S (nat_of_ad (node_height cfg node))) cfg ul y node lt_1
+                  (S (nat_of_N (node_height cfg node))) cfg ul y node lt_1
                   cfg_OK ul_OK used))))).
 Qed.
 
@@ -420,7 +420,7 @@ Proof.
 Qed.
 
 Lemma BDDuniv_var_le :
- ad_le (node_height (fst BDDuniv) (snd BDDuniv)) (node_height cfg node) =
+ Nle (node_height (fst BDDuniv) (snd BDDuniv)) (node_height cfg node) =
  true.
 Proof.
   exact
@@ -429,7 +429,7 @@ Proof.
          (proj2
             (proj2
                (BDDuniv_1_lemma gc gc_is_OK
-                  (S (nat_of_ad (node_height cfg node))) cfg ul y node lt_1
+                  (S (nat_of_N (node_height cfg node))) cfg ul y node lt_1
                   cfg_OK ul_OK used))))).
 Qed.
 
@@ -617,7 +617,7 @@ Proof.
 Qed.
 
 (*
-Lemma BDDex_var_le : (ad_le (node_height (Fst BDDex) (Snd BDDex)) (node_height cfg node))=true.
+Lemma BDDex_var_le : (Nle (node_height (Fst BDDex) (Snd BDDex)) (node_height cfg node))=true.
 Proof.
 
 Qed.
@@ -1082,7 +1082,7 @@ Hypothesis cfg_OK : BDDconfig_OK cfg.
 Hypothesis ul_OK : used_list_OK cfg ul.
 Hypothesis used : used_node' cfg ul node.
 
-Hypothesis xy_neq : ad_eq x y = false.
+Hypothesis xy_neq : Neqb x y = false.
 
 Definition BDDreplace :=
   match BDDvar_make gc cfg ul y with
@@ -1315,7 +1315,7 @@ Fixpoint be_x_free (x : BDDvar) (be : bool_expr) {struct be} : bool :=
   match be with
   | Zero => false
   | One => false
-  | Var y => ad_eq x y
+  | Var y => Neqb x y
   | Neg be1 => be_x_free x be1
   | Or be1 be2 => be_x_free x be1 || be_x_free x be2
   | ANd be1 be2 => be_x_free x be1 || be_x_free x be2
@@ -1326,12 +1326,12 @@ Fixpoint be_x_free (x : BDDvar) (be : bool_expr) {struct be} : bool :=
 Lemma subst_x_free :
  forall (be bex : bool_expr) (x y : BDDvar),
  be_x_free y (subst x bex be) = true ->
- be_x_free y be = true /\ ad_eq x y = false \/ be_x_free y bex = true.
+ be_x_free y be = true /\ Neqb x y = false \/ be_x_free y bex = true.
 Proof.
   simple induction be.  simpl in |- *.  intros.  discriminate.  simpl in |- *.  intros.  discriminate.
-  simpl in |- *.  intros.  elim (sumbool_of_bool (ad_eq x b)).  intro y0.  rewrite y0 in H.
+  simpl in |- *.  intros.  elim (sumbool_of_bool (Neqb x b)).  intro y0.  rewrite y0 in H.
   right.  assumption.  intro y0.  rewrite y0 in H.  simpl in H.  left.  split.
-  assumption.  rewrite (ad_eq_complete _ _ H).  assumption.  simpl in |- *.  intros.
+  assumption.  rewrite (Neqb_complete _ _ H).  assumption.  simpl in |- *.  intros.
   apply H.  assumption.  simpl in |- *.  intros.  elim (orb_prop _ _ H1).  intro.
   elim (H bex x y H2).  intros.  elim H3.  intros.  rewrite H4.  left.  simpl in |- *.
   split.  reflexivity.  assumption.  intro.  right.  assumption.  intro.
@@ -1357,7 +1357,7 @@ Qed.
 Lemma restrict_x_free :
  forall (be : bool_expr) (x y : BDDvar) (b : bool),
  be_x_free y (restrict x b be) = true ->
- be_x_free y be = true /\ ad_eq x y = false.
+ be_x_free y be = true /\ Neqb x y = false.
 Proof.
   unfold restrict in |- *.  intros.  elim (subst_x_free be (bool_to_be b) x y H).
   trivial.  elim b.  simpl in |- *.  intro.  discriminate.  simpl in |- *.  intro.
@@ -1368,11 +1368,11 @@ Qed.
 Lemma replace_x_free :
  forall (be : bool_expr) (x y z : BDDvar),
  be_x_free z (replace x y be) = true ->
- be_x_free z be = true /\ ad_eq x z = false \/ ad_eq y z = true.
+ be_x_free z be = true /\ Neqb x z = false \/ Neqb y z = true.
 Proof.
   unfold replace in |- *.  intros.  elim (subst_x_free be (Var y) x z H).  intros.
-  left.  assumption.  simpl in |- *.  intro.  right.  rewrite (ad_eq_complete _ _ H0).
-  apply ad_eq_correct.
+  left.  assumption.  simpl in |- *.  intro.  right.  rewrite (Neqb_complete _ _ H0).
+  apply Neqb_correct.
 Qed.
 
 Lemma replacel_x_free :
@@ -1392,9 +1392,9 @@ Proof.
 
   left.
   split.  assumption.  unfold not in |- *; intro.  elim H7; intro.  rewrite H10 in H6.
-  rewrite (ad_eq_correct x) in H6.  discriminate.  elim (H9 H10).  intro.
+  rewrite (Neqb_correct x) in H6.  discriminate.  elim (H9 H10).  intro.
   right.  right.  assumption.  apply eq_add_S.  assumption.  assumption.  intro.
-  right.  left.  apply ad_eq_complete.  assumption.  
+  right.  left.  apply Neqb_complete.  assumption.  
 Qed.
 
 Lemma impl_x_free :
@@ -1416,7 +1416,7 @@ Qed.
 Lemma univ_x_free :
  forall (be : bool_expr) (x y : BDDvar),
  be_x_free y (forall_ x be) = true ->
- be_x_free y be = true /\ ad_eq x y = false.
+ be_x_free y be = true /\ Neqb x y = false.
 Proof.
   unfold forall_ in |- *.  intros.  elim (and_x_free _ _ _ H).  intro.
   elim (restrict_x_free _ _ _ _ H0).  auto.  intro.
@@ -1426,7 +1426,7 @@ Qed.
 Lemma ex_x_free :
  forall (be : bool_expr) (x y : BDDvar),
  be_x_free y (be_ex x be) = true ->
- be_x_free y be = true /\ ad_eq x y = false.
+ be_x_free y be = true /\ Neqb x y = false.
 Proof.
   unfold be_ex in |- *.  intros.  elim (and_x_free _ _ _ H).  intro.
   elim (restrict_x_free _ _ _ _ H0).  auto.  intro.
@@ -1440,7 +1440,7 @@ Proof.
   simple induction lx.  simpl in |- *.  auto.  intros.  elim (univ_x_free _ _ _ H0).
   fold (univl be l) in |- *.  intros.  elim (H be x H1).  intros.  split.  assumption.
   simpl in |- *.  unfold not in |- *; intros.  elim H5.  intro.  rewrite H6 in H2.
-  rewrite (ad_eq_correct x) in H2; discriminate.  intro.  elim (H4 H6).  
+  rewrite (Neqb_correct x) in H2; discriminate.  intro.  elim (H4 H6).  
 Qed.
 
 Lemma exl_x_free :
@@ -1450,21 +1450,21 @@ Proof.
   simple induction lx.  simpl in |- *.  auto.  intros.  elim (ex_x_free _ _ _ H0).
   fold (exl be l) in |- *.  intros.  elim (H be x H1).  intros.  split.  assumption.
   simpl in |- *.  unfold not in |- *; intros.  elim H5.  intro.  rewrite H6 in H2.
-  rewrite (ad_eq_correct x) in H2; discriminate.  intro.  elim (H4 H6).  
+  rewrite (Neqb_correct x) in H2; discriminate.  intro.  elim (H4 H6).  
 Qed.
 
 Definition var_env' := nat -> bool.
 Definition var_env_to_env' (ve : var_env) : var_env' :=
-  fun n : nat => ve (ad_of_nat n).
+  fun n : nat => ve (N_of_nat n).
 Definition var_env'_to_env (ve : var_env') : var_env :=
-  fun x : BDDvar => ve (nat_of_ad x).
+  fun x : BDDvar => ve (nat_of_N x).
 Definition eval_be' (be : bool_expr) (ve : var_env') :=
   bool_fun_of_bool_expr be (var_env'_to_env ve).
 Definition var_env'' := Map unit.
 Definition var_env''_to_env (ve : var_env'') : var_env :=
   fun x : ad => in_dom _ x ve.
 Definition var_env''_to_env' (ve : var_env'') : var_env' :=
-  fun n : nat => in_dom _ (ad_of_nat n) ve.
+  fun n : nat => in_dom _ (N_of_nat n) ve.
 
 Definition be_eq (be1 be2 : bool_expr) :=
   forall ve : var_env', eval_be' be1 ve = eval_be' be2 ve.
@@ -1629,9 +1629,9 @@ Proof.
     bool_fun_of_bool_expr be2 (var_env'_to_env (var_env_to_env' vb))).
   intro.  rewrite H0.  rewrite H1.  rewrite (H (var_env_to_env' vb)).  symmetry  in |- *.
   apply eqb_reflx.  apply (bool_fun_of_be_ext be2).
-  unfold var_env'_to_env, var_env_to_env' in |- *.  intro.  rewrite (ad_of_nat_of_ad x).
+  unfold var_env'_to_env, var_env_to_env' in |- *.  intro.  rewrite (N_of_nat_of_N x).
   reflexivity.  apply (bool_fun_of_be_ext be1).  intro.
-  unfold var_env'_to_env, var_env_to_env' in |- *.  rewrite (ad_of_nat_of_ad x).
+  unfold var_env'_to_env, var_env_to_env' in |- *.  rewrite (N_of_nat_of_N x).
   reflexivity.
 Qed.
 
@@ -1731,8 +1731,8 @@ Section Nsec.
 
 Variable N : nat.
 
-Definition ap (n : nat) := ad_of_nat n.
-Definition ap' (n : nat) := ad_of_nat (N + n).
+Definition ap (n : nat) := N_of_nat n.
+Definition ap' (n : nat) := N_of_nat (N + n).
 
 Fixpoint lx_1 (n : nat) : list ad :=
   match n with
@@ -1748,21 +1748,21 @@ Fixpoint lx'_1 (n : nat) : list ad :=
 
 Definition lx := lx_1 N.
 Definition lx' := lx'_1 N.
-Lemma ap_neq_ap' : forall n : nat, n < N -> ad_eq (ap n) (ap' n) = false.
+Lemma ap_neq_ap' : forall n : nat, n < N -> Neqb (ap n) (ap' n) = false.
 Proof.
   simple induction n.  intros.  unfold ap, ap' in |- *.  rewrite <- (plus_n_O N).
   apply not_true_is_false.  unfold not in |- *; intro.  elim (lt_irrefl N).
   replace (N < N) with (0 < N).  assumption.
-  replace 0 with (nat_of_ad (ad_of_nat 0)).  rewrite (ad_eq_complete _ _ H0).
-  rewrite (nat_of_ad_of_nat N).  reflexivity.  reflexivity.  intros.
+  replace 0 with (nat_of_N (N_of_nat 0)).  rewrite (Neqb_complete _ _ H0).
+  rewrite (nat_of_N_of_nat N).  reflexivity.  reflexivity.  intros.
   unfold ap, ap' in |- *.  rewrite <- (plus_Snm_nSm N n0).  apply not_true_is_false.
   unfold not in |- *; intro.
-  cut (nat_of_ad (ad_of_nat (S n0)) = nat_of_ad (ad_of_nat (S N + n0))).
-  rewrite (nat_of_ad_of_nat (S n0)).  rewrite (nat_of_ad_of_nat (S N + n0)).
+  cut (nat_of_N (N_of_nat (S n0)) = nat_of_N (N_of_nat (S N + n0))).
+  rewrite (nat_of_N_of_nat (S n0)).  rewrite (nat_of_N_of_nat (S N + n0)).
   simpl in |- *.  intro.  unfold ap, ap' in H.  rewrite <- (eq_add_S _ _ H2) in H.
-  rewrite (ad_eq_correct (ad_of_nat n0)) in H.  cut (true = false).  intro.
+  rewrite (Neqb_correct (N_of_nat n0)) in H.  cut (true = false).  intro.
   discriminate.  apply H.  apply lt_trans with (m := S n0).  apply lt_n_Sn.
-  assumption.  rewrite (ad_eq_complete _ _ H1).  reflexivity.
+  assumption.  rewrite (Neqb_complete _ _ H1).  reflexivity.
 Qed.
 
 Lemma lx_1_neg_lx'_1 :
@@ -1961,21 +1961,21 @@ Proof.
   rewrite H1.  reflexivity.  apply le_S_n.  assumption.  
 Qed.
 
-Lemma in_lx' : forall n : nat, N <= n -> S n <= 2 * N -> In (ad_of_nat n) lx'.
+Lemma in_lx' : forall n : nat, N <= n -> S n <= 2 * N -> In (N_of_nat n) lx'.
 Proof.
-  intros.  replace (ad_of_nat n) with (ap' (n - N)).  unfold lx' in |- *.
+  intros.  replace (N_of_nat n) with (ap' (n - N)).  unfold lx' in |- *.
   apply in_lx'_1.  simpl in H0.  rewrite <- (plus_n_O N) in H0.
   apply plus_lt_reg_l with (p := N).  rewrite <- (le_plus_minus N n H).
   assumption.  unfold ap' in |- *.  rewrite <- (le_plus_minus N n H).  reflexivity.  
 Qed.
 
 Lemma in_lx'_1_conv :
- forall n m : nat, In (ad_of_nat m) (lx'_1 n) -> N <= m /\ m < N + n.
+ forall n m : nat, In (N_of_nat m) (lx'_1 n) -> N <= m /\ m < N + n.
 Proof.
   simple induction n.  simpl in |- *.  intros.  elim H.  simpl in |- *.  intros.  elim H0.  unfold ap' in |- *.
   intros.  replace m with (N + n0).  split.  apply le_plus_l.
-  apply plus_lt_compat_l.  unfold lt in |- *.  apply le_n.  rewrite <- (nat_of_ad_of_nat m).
-  rewrite <- H1.  symmetry  in |- *.  apply nat_of_ad_of_nat.  intro.  elim (H _ H1).
+  apply plus_lt_compat_l.  unfold lt in |- *.  apply le_n.  rewrite <- (nat_of_N_of_nat m).
+  rewrite <- H1.  symmetry  in |- *.  apply nat_of_N_of_nat.  intro.  elim (H _ H1).
   intros.  split.  assumption.  apply lt_trans with (m := N + n0).  assumption.
   apply plus_lt_compat_l.  unfold lt in |- *.  apply le_n.
 Qed.
@@ -2124,9 +2124,9 @@ Proof.
   replace (bool_fun_of_bool_expr be1 (var_env'_to_env (var_env_to_env' ve)))
    with (bool_fun_of_bool_expr be1 ve).
   assumption.  apply (bool_fun_of_be_ext be1).
-  unfold var_env'_to_env, var_env_to_env' in |- *.  intro.  rewrite (ad_of_nat_of_ad x).
+  unfold var_env'_to_env, var_env_to_env' in |- *.  intro.  rewrite (N_of_nat_of_N x).
   reflexivity.  apply (bool_fun_of_be_ext be2).  intro.
-  unfold var_env'_to_env, var_env_to_env' in |- *.  rewrite (ad_of_nat_of_ad x).
+  unfold var_env'_to_env, var_env_to_env' in |- *.  rewrite (N_of_nat_of_N x).
   reflexivity.
 Qed.
 
@@ -2549,7 +2549,7 @@ Lemma be_x_free_be_ok :
  (forall x : BDDvar, be_x_free x be = true -> vf x = true) -> be_ok be.
 Proof.
   simple induction be.  intros.  apply zero_ok.  intros.  apply one_ok.  simpl in |- *.
-  intros.  apply var_ok.  apply H.  apply ad_eq_correct.  simpl in |- *.  intros.
+  intros.  apply var_ok.  apply H.  apply Neqb_correct.  simpl in |- *.  intros.
   apply neg_ok.  apply H.  assumption.  simpl in |- *.  intros.  apply or_ok.  apply H.
   intros.  apply H1.  rewrite H2.  reflexivity.  apply H0.  intros.  apply H1.
   rewrite H2.  elim (be_x_free x b); reflexivity.  simpl in |- *.  intros.
@@ -2567,7 +2567,7 @@ Lemma be_ok_be_x_free :
  be_ok be -> forall x : BDDvar, be_x_free x be = true -> vf x = true.
 Proof.
   simple induction be.  simpl in |- *.  intros.  discriminate.  simpl in |- *.  intros.  discriminate.
-  simpl in |- *.  intros.  rewrite (ad_eq_complete _ _ H0).  inversion H.  assumption.
+  simpl in |- *.  intros.  rewrite (Neqb_complete _ _ H0).  inversion H.  assumption.
   simpl in |- *.  intros.  inversion H0.  apply H.  assumption.  assumption.  simpl in |- *.
   intros.  inversion H1.  elim (orb_prop _ _ H2).  intro.  apply H.  assumption.
   assumption.  intro.  apply H0.  assumption.  assumption.  simpl in |- *.  intros.

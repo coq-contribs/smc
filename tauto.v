@@ -17,7 +17,7 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
+Require Import ZArith NArith Nnat Ndec Ndigits.
 Require Import Allmaps.
 Require Import List.
 Require Import Wf_nat.
@@ -287,7 +287,7 @@ Proof.
 Qed.
 
 Definition is_tauto (be : bool_expr) :=
-  ad_eq BDDone (snd (BDDof_bool_expr initBDDconfig nil be)).
+  Neqb BDDone (snd (BDDof_bool_expr initBDDconfig nil be)).
 
 Lemma is_tauto_lemma :
  forall be : bool_expr,
@@ -299,7 +299,7 @@ Proof.
       (bool_fun_of_BDD (fst (BDDof_bool_expr initBDDconfig nil be))
          (snd (BDDof_bool_expr initBDDconfig nil be)))
       (bool_fun_of_bool_expr be)).
-  intro.  split.  intro.  rewrite <- (ad_eq_complete _ _ H0) in H.
+  intro.  split.  intro.  rewrite <- (Neqb_complete _ _ H0) in H.
   apply
    bool_fun_eq_trans
     with

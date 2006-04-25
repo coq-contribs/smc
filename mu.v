@@ -17,7 +17,7 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
+Require Import ZArith NArith Nnat Ndec Ndigits.
 Require Import Map.
 Require Import Allmaps.
 Require Import List.
@@ -118,31 +118,31 @@ Lemma empty_map_card :
  (forall x : ad, in_dom _ x m = false) -> MapCard _ m = 0.
 Proof.
   simple induction m.  reflexivity.  intros.  cut (in_dom _ a (M1 _ a a0) = false).
-  unfold in_dom in |- *.  simpl in |- *.  rewrite (ad_eq_correct a).  intro.  discriminate.
+  unfold in_dom in |- *.  simpl in |- *.  rewrite (Neqb_correct a).  intro.  discriminate.
   apply H.  intros.  simpl in |- *.  unfold in_dom in H1.  rewrite H.  rewrite H0.
   reflexivity.  intro.
   cut
-   (match MapGet A (M2 A m0 m1) (ad_double_plus_un x) with
-    | NONE => false
-    | SOME _ => true
+   (match MapGet A (M2 A m0 m1) (Ndouble_plus_one x) with
+    | None => false
+    | Some _ => true
     end = false).
   rewrite
-   (MapGet_M2_bit_0_1 A (ad_double_plus_un x) (ad_double_plus_un_bit_0 x) m0
+   (MapGet_M2_bit_0_1 A (Ndouble_plus_one x) (Ndouble_plus_one_bit0 x) m0
       m1).
-  unfold in_dom in |- *.  rewrite (ad_double_plus_un_div_2 x).  trivial.  apply H1.
+  unfold in_dom in |- *.  rewrite (Ndouble_plus_one_div2 x).  trivial.  apply H1.
   intro.  cut
-   (match MapGet A (M2 A m0 m1) (ad_double x) with
-    | NONE => false
-    | SOME _ => true
+   (match MapGet A (M2 A m0 m1) (Ndouble x) with
+    | None => false
+    | Some _ => true
     end = false).
-  rewrite (MapGet_M2_bit_0_0 A (ad_double x) (ad_double_bit_0 x) m0 m1).
-  unfold in_dom in |- *.  rewrite (ad_double_div_2 x).  trivial.  apply H1.
+  rewrite (MapGet_M2_bit_0_0 A (Ndouble x) (Ndouble_bit0 x) m0 m1).
+  unfold in_dom in |- *.  rewrite (Ndouble_div2 x).  trivial.  apply H1.
 Qed.
 
 Fixpoint Map_eq (m1 m2 : Map unit) {struct m2} : bool :=
   match m1, m2 with
   | M0, M0 => true
-  | M1 a1 _, M1 a2 _ => ad_eq a1 a2
+  | M1 a1 _, M1 a2 _ => Neqb a1 a2
   | M2 m1 m1', M2 m2 m2' => Map_eq m1 m2 && Map_eq m1' m2'
   | _, _ => false
   end.
@@ -152,7 +152,7 @@ Lemma Map_eq_complete :
 Proof.
   double induction m1 m2.  reflexivity.  simpl in |- *.  intros; discriminate.  simpl in |- *.
   intros; discriminate.  simpl in |- *.  intros; discriminate.  simpl in |- *.  intros.
-  elim a0.  elim a1.  rewrite (ad_eq_complete a2 a).  reflexivity.  assumption.
+  elim a0.  elim a1.  rewrite (Neqb_complete a2 a).  reflexivity.  assumption.
   simpl in |- *.  intros; discriminate.  simpl in |- *.  intros; discriminate.  simpl in |- *.
   intros; discriminate.  simpl in |- *.  intros.  elim (andb_prop _ _ H3).  intros.
   rewrite (H1 _ H5).  rewrite (H2 _ H4).  reflexivity.  
@@ -160,7 +160,7 @@ Qed.
 
 Lemma Map_eq_correct : forall m : Map unit, Map_eq m m = true.
 Proof.
-  simple induction m.  reflexivity.  simpl in |- *.  intros.  apply ad_eq_correct.  simpl in |- *.
+  simple induction m.  reflexivity.  simpl in |- *.  intros.  apply Neqb_correct.  simpl in |- *.
   intros.  rewrite H.  rewrite H0.  reflexivity.  
 Qed.
 
@@ -174,9 +174,9 @@ Qed.
 Section Intervals.
 
 Variable L U : nat.
-Definition nat_lu (n : nat) := nat_le L n && nat_le (S n) U.
+Definition nat_lu (n : nat) := leb L n && leb (S n) U.
 Definition var_lu (x : ad) :=
-  nat_le L (nat_of_ad x) && nat_le (S (nat_of_ad x)) U.
+  leb L (nat_of_N x) && leb (S (nat_of_N x)) U.
 Definition var_env_eq (e1 e2 : var_env) :=
   forall x : BDDvar, var_lu x = true -> e1 x = e2 x.
 
@@ -194,15 +194,15 @@ Section Sequence.
 End Sequence.
 
 Lemma var_lu_nat_lu :
- forall x : ad, var_lu x = true -> nat_lu (nat_of_ad x) = true.
+ forall x : ad, var_lu x = true -> nat_lu (nat_of_N x) = true.
 Proof.
   trivial.
 Qed.
 
 Lemma nat_lu_var_lu :
- forall n : nat, nat_lu n = true -> var_lu (ad_of_nat n) = true.
+ forall n : nat, nat_lu n = true -> var_lu (N_of_nat n) = true.
 Proof.
-  unfold var_lu, nat_lu in |- *.  intro.  rewrite (nat_of_ad_of_nat n).  trivial.
+  unfold var_lu, nat_lu in |- *.  intro.  rewrite (nat_of_N_of_nat n).  trivial.
 Qed.
 
 Lemma eval_be_independent :
@@ -278,7 +278,7 @@ End Intervals.
 Definition Evar_env'ntoSn (U : nat) (ve : var_env') : var_env' :=
   fun n : nat => if beq_nat n U then true else ve n.
 Definition Evar_env''ntoSn (U : nat) (ve : var_env'') : var_env'' :=
-  MapPut _ ve (ad_of_nat U) tt.
+  MapPut _ ve (N_of_nat U) tt.
 
 Lemma beq_Eq_true : forall m n : nat, beq_nat m n = true <-> eq_nat m n.
 Proof.
@@ -306,15 +306,15 @@ Proof.
   elim (andb_false_elim _ _ H1).  intro y.  cut (beq_nat n U = false).  intro.
   rewrite H2.  apply H0.  unfold nat_lu in |- *.  rewrite y.  reflexivity.  
   apply not_true_is_false.  unfold not in |- *; intro.
-  rewrite (beq_complete _ _ H2) in y.  rewrite (nat_le_correct _ _ H) in y.
+  rewrite (beq_complete _ _ H2) in y.  rewrite (leb_correct _ _ H) in y.
   discriminate.  simpl in |- *.  intro y.  cut (beq_nat n U = false).  intro.  rewrite H2.
-  apply H0.  unfold nat_lu in |- *.  replace (nat_le (S n) U) with false.
-  elim (nat_le L n).  reflexivity.  reflexivity.  symmetry  in |- *.
-  apply not_true_is_false.  unfold not in |- *; intro.  cut (nat_le n U = true).  intro.
-  rewrite H4 in y; discriminate.  apply nat_le_correct.  apply le_Sn_le.
-  apply nat_le_complete.  assumption.  apply not_true_is_false.
+  apply H0.  unfold nat_lu in |- *.  replace (leb (S n) U) with false.
+  elim (leb L n).  reflexivity.  reflexivity.  symmetry  in |- *.
+  apply not_true_is_false.  unfold not in |- *; intro.  cut (leb n U = true).  intro.
+  rewrite H4 in y; discriminate.  apply leb_correct.  apply le_Sn_le.
+  apply leb_complete.  assumption.  apply not_true_is_false.
   unfold not in |- *; intro.  rewrite (beq_complete _ _ H2) in y.
-  rewrite (nat_le_correct U U) in y.  discriminate.  apply le_n.  
+  rewrite (leb_correct U U) in y.  discriminate.  apply le_n.  
 Qed.
 
 Lemma Evar_env''ntoSn_lemma :
@@ -325,26 +325,26 @@ Proof.
   unfold In in |- *.  unfold Evar_env'', Evar_env''ntoSn in |- *.  split.  apply MapPut_canon.
   exact (proj1 H0).  elim H0.  clear H0.  intro.  clear H0.  intros.
   unfold var_lu in H1.  elim (andb_false_elim _ _ H1).  intro y.
-  cut (ad_eq (ad_of_nat U) x = false).  intro.  unfold in_dom in |- *.
-  rewrite (MapPut_semantics unit ve (ad_of_nat U) tt x).  rewrite H2.
+  cut (Neqb (N_of_nat U) x = false).  intro.  unfold in_dom in |- *.
+  rewrite (MapPut_semantics unit ve (N_of_nat U) tt x).  rewrite H2.
   unfold in_dom in H0.  apply H0.  unfold var_lu in |- *.  rewrite y.  reflexivity.
   apply not_true_is_false.  unfold not in |- *; intro.
-  cut (ad_le (ad_of_nat L) (ad_of_nat U) = true).
-  rewrite (ad_eq_complete _ _ H2).  unfold ad_le in |- *.  rewrite (nat_of_ad_of_nat L).
-  rewrite y.  intro; discriminate.  unfold ad_le in |- *.  rewrite (nat_of_ad_of_nat L).
-  rewrite (nat_of_ad_of_nat U).  apply nat_le_correct.  assumption.
+  cut (Nle (N_of_nat L) (N_of_nat U) = true).
+  rewrite (Neqb_complete _ _ H2).  unfold Nle in |- *.  rewrite (nat_of_N_of_nat L).
+  rewrite y.  intro; discriminate.  unfold Nle in |- *.  rewrite (nat_of_N_of_nat L).
+  rewrite (nat_of_N_of_nat U).  apply leb_correct.  assumption.
   simpl in |- *.  intro y.  unfold in_dom in |- *.
-  rewrite (MapPut_semantics unit ve (ad_of_nat U) tt x).
-  cut (ad_eq (ad_of_nat U) x = false).  intro.  rewrite H2.  unfold in_dom in H0.
-  apply H0.  unfold var_lu in |- *.  replace (nat_le (S (nat_of_ad x)) U) with false.
-  elim (nat_le L (nat_of_ad x)).  reflexivity.  reflexivity.  symmetry  in |- *.
+  rewrite (MapPut_semantics unit ve (N_of_nat U) tt x).
+  cut (Neqb (N_of_nat U) x = false).  intro.  rewrite H2.  unfold in_dom in H0.
+  apply H0.  unfold var_lu in |- *.  replace (leb (S (nat_of_N x)) U) with false.
+  elim (leb L (nat_of_N x)).  reflexivity.  reflexivity.  symmetry  in |- *.
   apply not_true_is_false.  unfold not in |- *; intro.
-  cut (nat_le (nat_of_ad x) U = true).  intro.
-  rewrite H4 in y; discriminate.  apply nat_le_correct.  apply le_Sn_le.
-  apply nat_le_complete.  assumption.  apply not_true_is_false.
-  unfold not in |- *; intro.  rewrite <- (ad_eq_complete _ _ H2) in y.
-  rewrite (nat_of_ad_of_nat U) in y.
-  rewrite (nat_le_correct U U) in y.  discriminate.  apply le_n.
+  cut (leb (nat_of_N x) U = true).  intro.
+  rewrite H4 in y; discriminate.  apply leb_correct.  apply le_Sn_le.
+  apply leb_complete.  assumption.  apply not_true_is_false.
+  unfold not in |- *; intro.  rewrite <- (Neqb_complete _ _ H2) in y.
+  rewrite (nat_of_N_of_nat U) in y.
+  rewrite (leb_correct U U) in y.  discriminate.  apply le_n.
 Qed.
 
 Section Evar_env''LULSU.
@@ -372,11 +372,12 @@ Proof.
   unfold Evar_env'' in H0.  apply (mapcanon_unique unit).  exact (proj1 H0).
   apply M0_canon.  unfold eqmap, eqm in |- *.  simpl in |- *.  intro.
   cut (in_dom unit a ve = false).  unfold in_dom in |- *.  elim (MapGet unit ve a).
+  Focus 2.
   reflexivity.  intros.  discriminate.  apply (proj2 H0).  unfold var_lu in |- *.
   apply not_true_is_false.  unfold not in |- *; intro.  elim (andb_prop _ _ H1).
   intros.  cut (0 < U - L).  rewrite H.  intro.  exact (lt_n_O _ H4).
-  apply lt_mn_minus.  unfold lt in |- *.  apply le_trans with (m := S (nat_of_ad a)).
-  apply le_n_S.  apply nat_le_complete.  assumption.  apply nat_le_complete.
+  apply lt_mn_minus.  unfold lt in |- *.  apply le_trans with (m := S (nat_of_N a)).
+  apply le_n_S.  apply leb_complete.  assumption.  apply leb_complete.
   assumption.
 Qed.
 
@@ -453,46 +454,46 @@ Qed.
 Lemma imagef1lemma' :
  forall ve : var_env'',
  In _ Evar_env''LSU ve ->
- in_dom _ (ad_of_nat U) ve = true ->
+ in_dom _ (N_of_nat U) ve = true ->
  exists ve' : var_env'', In _ Evar_env''LU ve' /\ f1' ve' = ve.
 Proof.
   intros.  unfold Evar_env''LSU in H.  unfold Evar_env'' in H.  unfold In in H.
-  split with (MapRemove _ ve (ad_of_nat U)).  split.  unfold In in |- *.
+  split with (MapRemove _ ve (N_of_nat U)).  split.  unfold In in |- *.
   unfold Evar_env''LU in |- *.  unfold Evar_env'' in |- *.  split.  apply MapRemove_canon.
   exact (proj1 H).  intros.  unfold in_dom in |- *.
-  rewrite (MapRemove_semantics unit ve (ad_of_nat U) x).
-  elim (sumbool_of_bool (ad_eq (ad_of_nat U) x)).  intro y.  rewrite y.
+  rewrite (MapRemove_semantics unit ve (N_of_nat U) x).
+  elim (sumbool_of_bool (Neqb (N_of_nat U) x)).  intro y.  rewrite y.
   reflexivity.  intro y.  rewrite y.  unfold in_dom in H.  apply (proj2 H).
   unfold var_lu in |- *.  unfold var_lu in H1.  elim (andb_false_elim _ _ H1).  intro y0.
   rewrite y0.  reflexivity.  intro y0.
-  replace (nat_le (S (nat_of_ad x)) (S U)) with false.
-  elim (nat_le L (nat_of_ad x)); reflexivity.  symmetry  in |- *.
-  apply not_true_is_false.  unfold not in |- *; intro.  cut (nat_of_ad x <= U).
+  replace (leb (S (nat_of_N x)) (S U)) with false.
+  elim (leb L (nat_of_N x)); reflexivity.  symmetry  in |- *.
+  apply not_true_is_false.  unfold not in |- *; intro.  cut (nat_of_N x <= U).
   intro.  elim (le_le_S_eq _ _ H3).  intro.
-  rewrite (nat_le_correct _ _ H4) in y0.  discriminate.  intro.
-  rewrite <- H4 in y.  rewrite (ad_of_nat_of_ad x) in y.
-  rewrite (ad_eq_correct x) in y.  discriminate.  apply le_S_n.
-  apply nat_le_complete.  assumption.  unfold f1' in |- *.  unfold Evar_env''ntoSn in |- *.
+  rewrite (leb_correct _ _ H4) in y0.  discriminate.  intro.
+  rewrite <- H4 in y.  rewrite (N_of_nat_of_N x) in y.
+  rewrite (Neqb_correct x) in y.  discriminate.  apply le_S_n.
+  apply leb_complete.  assumption.  unfold f1' in |- *.  unfold Evar_env''ntoSn in |- *.
   unfold var_env'' in ve.  apply
    (mapcanon_unique _
-      (MapPut unit (MapRemove unit ve (ad_of_nat U)) (ad_of_nat U) tt) ve).
+      (MapPut unit (MapRemove unit ve (N_of_nat U)) (N_of_nat U) tt) ve).
   apply MapPut_canon.  apply MapRemove_canon.  exact (proj1 H).
   exact (proj1 H).  unfold eqmap in |- *.  unfold eqm in |- *.  intro.
   rewrite
-   (MapPut_semantics unit (MapRemove unit ve (ad_of_nat U)) 
-      (ad_of_nat U) tt a).
-  elim H; intros.  elim (sumbool_of_bool (ad_eq (ad_of_nat U) a)).  intro y.
-  rewrite y.  unfold in_dom in H0.  rewrite (ad_eq_complete _ _ y) in H0.
+   (MapPut_semantics unit (MapRemove unit ve (N_of_nat U)) 
+      (N_of_nat U) tt a).
+  elim H; intros.  elim (sumbool_of_bool (Neqb (N_of_nat U) a)).  intro y.
+  rewrite y.  unfold in_dom in H0.  rewrite (Neqb_complete _ _ y) in H0.
   elim (option_sum _ (MapGet unit ve a)).  intro y0.  elim y0.  intro x.  elim x.
   intros y1.  rewrite y1.  reflexivity.  intro y0.  rewrite y0 in H0.  discriminate.
-  intro y.  rewrite y.  rewrite (MapRemove_semantics unit ve (ad_of_nat U) a).
+  intro y.  rewrite y.  rewrite (MapRemove_semantics unit ve (N_of_nat U) a).
   rewrite y.  reflexivity.
 Qed.
 
 Lemma imagef2lemma' :
  forall ve : var_env'',
  In _ Evar_env''LSU ve ->
- in_dom _ (ad_of_nat U) ve = false ->
+ in_dom _ (N_of_nat U) ve = false ->
  exists ve' : var_env'', In _ Evar_env''LU ve' /\ f2' ve' = ve.
 Proof.
   intros.  unfold Evar_env''LSU in H.  unfold Evar_env'' in H.  unfold In in H.
@@ -500,23 +501,23 @@ Proof.
   split.  exact (proj1 H).  intros.  unfold var_lu in H1.
   elim (andb_false_elim _ _ H1).  intro y.  apply (proj2 H).  unfold var_lu in |- *.
   rewrite y.  reflexivity.  intro y.
-  elim (sumbool_of_bool (ad_eq x (ad_of_nat U))).  intro y0.
-  rewrite <- (ad_eq_complete _ _ y0) in H0.  assumption.  intro y0.
+  elim (sumbool_of_bool (Neqb x (N_of_nat U))).  intro y0.
+  rewrite <- (Neqb_complete _ _ y0) in H0.  assumption.  intro y0.
   apply (proj2 H).  unfold var_lu in |- *.
-  replace (nat_le (S (nat_of_ad x)) (S U)) with false.
-  elim (nat_le L (nat_of_ad x)); reflexivity.  symmetry  in |- *.  simpl in |- *.
+  replace (leb (S (nat_of_N x)) (S U)) with false.
+  elim (leb L (nat_of_N x)); reflexivity.  symmetry  in |- *.  simpl in |- *.
   apply not_true_is_false.  unfold not in |- *; intro.
-  elim (le_le_S_eq _ _ (nat_le_complete _ _ H2)).  intro.
-  rewrite (nat_le_correct _ _ H3) in y.  discriminate.  intro.
-  rewrite <- H3 in y0.  rewrite (ad_of_nat_of_ad x) in y0.
-  rewrite (ad_eq_correct x) in y0.  discriminate.  reflexivity.  
+  elim (le_le_S_eq _ _ (leb_complete _ _ H2)).  intro.
+  rewrite (leb_correct _ _ H3) in y.  discriminate.  intro.
+  rewrite <- H3 in y0.  rewrite (N_of_nat_of_N x) in y0.
+  rewrite (Neqb_correct x) in y0.  discriminate.  reflexivity.  
 Qed.
 
 Lemma imagef1'orf2'lemma :
  forall ve : var_env'', In _ Evar_env''LSU ve -> In _ imagef1'orf2' ve.
 Proof.
   intros.  unfold Evar_env''LSU in H.  unfold Evar_env'' in H.  unfold In in H.
-  unfold imagef1'orf2' in |- *.  elim (sumbool_of_bool (in_dom _ (ad_of_nat U) ve)).
+  unfold imagef1'orf2' in |- *.  elim (sumbool_of_bool (in_dom _ (N_of_nat U) ve)).
   intro y.  apply Union_introl.  unfold imagef1' in |- *.  elim (imagef1lemma' ve H y).
   intros.  apply (Im_intro _ _ Evar_env''LU f1' x).  exact (proj1 H0).
   rewrite (proj2 H0).  reflexivity.  intro y.  elim (imagef2lemma' ve H y).
@@ -671,18 +672,18 @@ Lemma var_lu_to_index1 :
   (x:ad)(var_lu x)=true->index.
 Proof.
   Unfold var_lu.  Intros.  Elim (andb_prop ? ? H).  Intros.
-  Refine (i_intro (nat_of_ad x) ? ?).  Apply nat_le_complete.  Assumption.
-  Unfold lt.  Apply nat_le_complete.  Assumption.
+  Refine (i_intro (nat_of_N x) ? ?).  Apply leb_complete.  Assumption.
+  Unfold lt.  Apply leb_complete.  Assumption.
 Qed.
 
 Lemma var_lu_to_index2 :
-  (x:BDDvar; pi:(var_lu x)=true)(order (var_lu_to_index1 x pi))=(nat_of_ad x).
+  (x:BDDvar; pi:(var_lu x)=true)(order (var_lu_to_index1 x pi))=(nat_of_N x).
 Lemma var_lu_to_index :
-  (x:ad)(var_lu x)=true->(EX i:index|(order i)=(nat_of_ad x)).
+  (x:ad)(var_lu x)=true->(EX i:index|(order i)=(nat_of_N x)).
 Proof.
   Unfold var_lu.  Intros.  Elim (andb_prop ? ? H).  Intros.
-  Split with (i_intro (nat_of_ad x) (nat_le_complete ? ? H0)
-        (nat_le_complete ? ? H1)).
+  Split with (i_intro (nat_of_N x) (leb_complete ? ? H0)
+        (leb_complete ? ? H1)).
   Reflexivity.
 Qed.
 
@@ -714,8 +715,8 @@ Proof.
   intros.  apply not_true_is_false.  unfold var_lu in |- *.  unfold not in |- *; intro.
   elim (andb_prop _ _ H0).  intros.  absurd (0 < U - L).  rewrite H.
   apply lt_irrefl.  apply lt_mn_minus.  unfold lt in |- *.
-  apply le_trans with (m := S (nat_of_ad x)).  apply le_n_S.
-  apply nat_le_complete.  assumption.  apply nat_le_complete.  assumption.
+  apply le_trans with (m := S (nat_of_N x)).  apply le_n_S.
+  apply leb_complete.  assumption.  apply leb_complete.  assumption.
 Qed.
 
 Definition bool_expr_to_var_env'' (L U : nat) (be : bool_expr) :
@@ -733,60 +734,60 @@ Lemma var_env'_to_var_env''_lemma1 :
  n = U - L ->
  exists ve'' : var_env'',
    In _ (Evar_env'' L U) ve'' /\
-   (forall x : ad, var_lu L U x = true -> in_dom _ x ve'' = ve (nat_of_ad x)).
+   (forall x : ad, var_lu L U x = true -> in_dom _ x ve'' = ve (nat_of_N x)).
 Proof.
   simple induction n.  intros.  split with (M0 unit).  split.  apply M0inEvar_env''.
   unfold var_lu in |- *.  intros.  absurd (0 < U - L).  rewrite H.  apply lt_irrefl.
   apply lt_mn_minus.  elim (andb_prop _ _ H0).  intros.  unfold lt in |- *.
-  apply le_trans with (m := S (nat_of_ad x)).  apply le_n_S.
-  apply nat_le_complete.  assumption.  apply nat_le_complete.  assumption.  
+  apply le_trans with (m := S (nat_of_N x)).  apply le_n_S.
+  apply leb_complete.  assumption.  apply leb_complete.  assumption.  
   intros.  cut (U = S (L + n0)).  intro.  elim (H L (L + n0) ve).  intros.
   elim (sumbool_of_bool (ve (L + n0))).  intros y.
-  split with (MapPut _ x (ad_of_nat (L + n0)) tt).  intros.  unfold in_dom in |- *.
+  split with (MapPut _ x (N_of_nat (L + n0)) tt).  intros.  unfold in_dom in |- *.
   split.  rewrite H1.  fold (Evar_env''ntoSn (L + n0) x) in |- *.
   apply Evar_env''ntoSn_lemma.  apply le_plus_l.  exact (proj1 H2).  intros.
-  rewrite (MapPut_semantics unit x (ad_of_nat (L + n0)) tt x0).
-  elim (sumbool_of_bool (ad_eq (ad_of_nat (L + n0)) x0)).  intro y0.
-  rewrite y0.  rewrite <- (ad_eq_complete _ _ y0).
-  rewrite (nat_of_ad_of_nat (L + n0)).  rewrite y.  reflexivity.  intro y0.
+  rewrite (MapPut_semantics unit x (N_of_nat (L + n0)) tt x0).
+  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y0.
+  rewrite y0.  rewrite <- (Neqb_complete _ _ y0).
+  rewrite (nat_of_N_of_nat (L + n0)).  rewrite y.  reflexivity.  intro y0.
   rewrite y0.  unfold in_dom in H2.  apply (proj2 H2).
   elim (andb_prop _ _ H3).  intros.  unfold var_lu in |- *.  rewrite H4.
-  replace (nat_le (S (nat_of_ad x0)) (L + n0)) with true.  reflexivity.  
-  symmetry  in |- *.  elim (le_le_S_eq (nat_of_ad x0) (L + n0)).  intro.
-  apply nat_le_correct.  assumption.  intro.  rewrite <- H6 in y0.
-  rewrite (ad_of_nat_of_ad x0) in y0.  rewrite (ad_eq_correct x0) in y0.
-  discriminate.  apply le_S_n.  rewrite <- H1.  apply nat_le_complete.
-  assumption.  intro y.  split with (MapRemove _ x (ad_of_nat (L + n0))).
+  replace (leb (S (nat_of_N x0)) (L + n0)) with true.  reflexivity.  
+  symmetry  in |- *.  elim (le_le_S_eq (nat_of_N x0) (L + n0)).  intro.
+  apply leb_correct.  assumption.  intro.  rewrite <- H6 in y0.
+  rewrite (N_of_nat_of_N x0) in y0.  rewrite (Neqb_correct x0) in y0.
+  discriminate.  apply le_S_n.  rewrite <- H1.  apply leb_complete.
+  assumption.  intro y.  split with (MapRemove _ x (N_of_nat (L + n0))).
   split.  unfold Evar_env'' in |- *.  unfold In in |- *.  split.  apply MapRemove_canon.
   exact (proj1 (proj1 H2)).  intros.  unfold in_dom in |- *.
-  rewrite (MapRemove_semantics unit x (ad_of_nat (L + n0)) x0).
+  rewrite (MapRemove_semantics unit x (N_of_nat (L + n0)) x0).
   rewrite H1 in H3.
-  elim (sumbool_of_bool (ad_eq (ad_of_nat (L + n0)) x0)).  intro y0.
+  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y0.
   rewrite y0.  reflexivity.  intro y0.  rewrite y0.  unfold Evar_env'' in H2.
   unfold In in H2.  unfold in_dom in H2.  apply (proj2 (proj1 H2)).
   apply not_true_is_false.  unfold not in |- *.  intro.  unfold var_lu in H4.
   unfold var_lu in H3.
   elim (andb_prop _ _ H4); intros H6 H7.
   rewrite H6 in H3.
-  elim (le_le_S_eq (nat_of_ad x0) (L + n0)).  intro.
-  cut (nat_le (S (nat_of_ad x0)) (S (L + n0)) = true).  intro.
-  rewrite H8 in H3.  discriminate.  apply nat_le_correct.
+  elim (le_le_S_eq (nat_of_N x0) (L + n0)).  intro.
+  cut (leb (S (nat_of_N x0)) (S (L + n0)) = true).  intro.
+  rewrite H8 in H3.  discriminate.  apply leb_correct.
   apply le_trans with (m := L + n0).  assumption.  apply le_n_Sn.  intro.
-  rewrite <- H5 in y0.  rewrite (ad_of_nat_of_ad x0) in y0.
-  rewrite (ad_eq_correct x0) in y0.  discriminate.
-  apply le_trans with (m := S (nat_of_ad x0)).  apply le_n_Sn.
-  apply nat_le_complete.  assumption.  intros.  unfold in_dom in |- *.
-  rewrite (MapRemove_semantics unit x (ad_of_nat (L + n0)) x0).
+  rewrite <- H5 in y0.  rewrite (N_of_nat_of_N x0) in y0.
+  rewrite (Neqb_correct x0) in y0.  discriminate.
+  apply le_trans with (m := S (nat_of_N x0)).  apply le_n_Sn.
+  apply leb_complete.  assumption.  intros.  unfold in_dom in |- *.
+  rewrite (MapRemove_semantics unit x (N_of_nat (L + n0)) x0).
   rewrite H1 in H3.  elim (andb_prop _ _ H3).  intros.
-  elim (sumbool_of_bool (ad_eq (ad_of_nat (L + n0)) x0)).  intro y0.
-  rewrite y0.  rewrite <- (ad_eq_complete _ _ y0).
-  rewrite (nat_of_ad_of_nat (L + n0)).  rewrite y.  reflexivity.  intro y0.
+  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y0.
+  rewrite y0.  rewrite <- (Neqb_complete _ _ y0).
+  rewrite (nat_of_N_of_nat (L + n0)).  rewrite y.  reflexivity.  intro y0.
   rewrite y0.  unfold in_dom in H2.  apply (proj2 H2).  unfold var_lu in |- *.
-  rewrite H4.  replace (nat_le (S (nat_of_ad x0)) (L + n0)) with true.
-  reflexivity.  symmetry  in |- *.  elim (le_le_S_eq (nat_of_ad x0) (L + n0)).
-  intro.  apply nat_le_correct.  assumption.  intro.  rewrite <- H6 in y0.
-  rewrite (ad_of_nat_of_ad x0) in y0.  rewrite (ad_eq_correct x0) in y0.
-  discriminate.  apply le_S_n.  apply nat_le_complete.  assumption.  symmetry  in |- *.
+  rewrite H4.  replace (leb (S (nat_of_N x0)) (L + n0)) with true.
+  reflexivity.  symmetry  in |- *.  elim (le_le_S_eq (nat_of_N x0) (L + n0)).
+  intro.  apply leb_correct.  assumption.  intro.  rewrite <- H6 in y0.
+  rewrite (N_of_nat_of_N x0) in y0.  rewrite (Neqb_correct x0) in y0.
+  discriminate.  apply le_S_n.  apply leb_complete.  assumption.  symmetry  in |- *.
   apply minus_plus.  rewrite (Splus_nm L n0).  rewrite (plus_Snm_nSm L n0).
   rewrite H0.  apply le_plus_minus.  apply lt_le_weak.  apply lt_O_minus_lt.
   rewrite <- H0.  auto with arith.  
@@ -797,60 +798,60 @@ Lemma var_env'_to_var_env''_lemma2 :
  n = U - L ->
  {ve'' : var_env'' |
  In _ (Evar_env'' L U) ve'' /\
- (forall x : ad, var_lu L U x = true -> in_dom _ x ve'' = ve (nat_of_ad x))}.
+ (forall x : ad, var_lu L U x = true -> in_dom _ x ve'' = ve (nat_of_N x))}.
 Proof.
   simple induction n.  intros.  split with (M0 unit).  split.  apply M0inEvar_env''.
   unfold var_lu in |- *.  intros.  absurd (0 < U - L).  rewrite H.  apply lt_irrefl.
   apply lt_mn_minus.  elim (andb_prop _ _ H0).  intros.  unfold lt in |- *.
-  apply le_trans with (m := S (nat_of_ad x)).  apply le_n_S.
-  apply nat_le_complete.  assumption.  apply nat_le_complete.  assumption.  
+  apply le_trans with (m := S (nat_of_N x)).  apply le_n_S.
+  apply leb_complete.  assumption.  apply leb_complete.  assumption.  
   intros.  cut (U = S (L + n0)).  intro.  elim (H L (L + n0) ve).  intros x y.
   elim (sumbool_of_bool (ve (L + n0))).  intros y0.
-  split with (MapPut _ x (ad_of_nat (L + n0)) tt).  intros.  unfold in_dom in |- *.
+  split with (MapPut _ x (N_of_nat (L + n0)) tt).  intros.  unfold in_dom in |- *.
   split.  rewrite H1.  fold (Evar_env''ntoSn (L + n0) x) in |- *.
   apply Evar_env''ntoSn_lemma.  apply le_plus_l.  exact (proj1 y).  intros.
-  rewrite (MapPut_semantics unit x (ad_of_nat (L + n0)) tt x0).
-  elim (sumbool_of_bool (ad_eq (ad_of_nat (L + n0)) x0)).  intro y1.
-  rewrite y1.  rewrite <- (ad_eq_complete _ _ y1).
-  rewrite (nat_of_ad_of_nat (L + n0)).  rewrite y0.  reflexivity.  intro y1.
+  rewrite (MapPut_semantics unit x (N_of_nat (L + n0)) tt x0).
+  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y1.
+  rewrite y1.  rewrite <- (Neqb_complete _ _ y1).
+  rewrite (nat_of_N_of_nat (L + n0)).  rewrite y0.  reflexivity.  intro y1.
   rewrite y1.  unfold in_dom in y.  apply (proj2 y).
   elim (andb_prop _ _ H2).  intros.  unfold var_lu in |- *.  rewrite H3.
-  replace (nat_le (S (nat_of_ad x0)) (L + n0)) with true.  reflexivity.  
-  symmetry  in |- *.  elim (le_le_S_eq (nat_of_ad x0) (L + n0)).  intro.
-  apply nat_le_correct.  assumption.  intro.  rewrite <- H5 in y1.
-  rewrite (ad_of_nat_of_ad x0) in y1.  rewrite (ad_eq_correct x0) in y1.
-  discriminate.  apply le_S_n.  rewrite <- H1.  apply nat_le_complete.
-  assumption.  intro y0.  split with (MapRemove _ x (ad_of_nat (L + n0))).
+  replace (leb (S (nat_of_N x0)) (L + n0)) with true.  reflexivity.  
+  symmetry  in |- *.  elim (le_le_S_eq (nat_of_N x0) (L + n0)).  intro.
+  apply leb_correct.  assumption.  intro.  rewrite <- H5 in y1.
+  rewrite (N_of_nat_of_N x0) in y1.  rewrite (Neqb_correct x0) in y1.
+  discriminate.  apply le_S_n.  rewrite <- H1.  apply leb_complete.
+  assumption.  intro y0.  split with (MapRemove _ x (N_of_nat (L + n0))).
   split.  unfold Evar_env'' in |- *.  unfold In in |- *.  split.  apply MapRemove_canon.
   exact (proj1 (proj1 y)).  intros.  unfold in_dom in |- *.
-  rewrite (MapRemove_semantics unit x (ad_of_nat (L + n0)) x0).
+  rewrite (MapRemove_semantics unit x (N_of_nat (L + n0)) x0).
   rewrite H1 in H2.
-  elim (sumbool_of_bool (ad_eq (ad_of_nat (L + n0)) x0)).  intro y1.
+  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y1.
   rewrite y1.  reflexivity.  intro y1.  rewrite y1.  unfold Evar_env'' in y.
   unfold In in y.  unfold in_dom in y.  apply (proj2 (proj1 y)).
   apply not_true_is_false.  unfold not in |- *.  intro.  unfold var_lu in H3.
   unfold var_lu in H2. 
   elim (andb_prop _ _ H3); intros H5 H6.
   rewrite H5 in H2.
-  elim (le_le_S_eq (nat_of_ad x0) (L + n0)).  intro.
-  cut (nat_le (S (nat_of_ad x0)) (S (L + n0)) = true).  intro.
-  rewrite H7 in H2.  discriminate.  apply nat_le_correct.
+  elim (le_le_S_eq (nat_of_N x0) (L + n0)).  intro.
+  cut (leb (S (nat_of_N x0)) (S (L + n0)) = true).  intro.
+  rewrite H7 in H2.  discriminate.  apply leb_correct.
   apply le_trans with (m := L + n0).  assumption.  apply le_n_Sn.  intro.
-  rewrite <- H4 in y1.  rewrite (ad_of_nat_of_ad x0) in y1.
-  rewrite (ad_eq_correct x0) in y1.  discriminate.
-  apply le_trans with (m := S (nat_of_ad x0)).  apply le_n_Sn.
-  apply nat_le_complete.  assumption.  intros.  unfold in_dom in |- *.
-  rewrite (MapRemove_semantics unit x (ad_of_nat (L + n0)) x0).
+  rewrite <- H4 in y1.  rewrite (N_of_nat_of_N x0) in y1.
+  rewrite (Neqb_correct x0) in y1.  discriminate.
+  apply le_trans with (m := S (nat_of_N x0)).  apply le_n_Sn.
+  apply leb_complete.  assumption.  intros.  unfold in_dom in |- *.
+  rewrite (MapRemove_semantics unit x (N_of_nat (L + n0)) x0).
   rewrite H1 in H2.  elim (andb_prop _ _ H2).  intros.
-  elim (sumbool_of_bool (ad_eq (ad_of_nat (L + n0)) x0)).  intro y1.
-  rewrite y1.  rewrite <- (ad_eq_complete _ _ y1).
-  rewrite (nat_of_ad_of_nat (L + n0)).  rewrite y0.  reflexivity.  intro y1.
+  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y1.
+  rewrite y1.  rewrite <- (Neqb_complete _ _ y1).
+  rewrite (nat_of_N_of_nat (L + n0)).  rewrite y0.  reflexivity.  intro y1.
   rewrite y1.  unfold in_dom in y.  apply (proj2 y).  unfold var_lu in |- *.
-  rewrite H3.  replace (nat_le (S (nat_of_ad x0)) (L + n0)) with true.
-  reflexivity.  symmetry  in |- *.  elim (le_le_S_eq (nat_of_ad x0) (L + n0)).
-  intro.  apply nat_le_correct.  assumption.  intro.  rewrite <- H5 in y1.
-  rewrite (ad_of_nat_of_ad x0) in y1.  rewrite (ad_eq_correct x0) in y1.
-  discriminate.  apply le_S_n.  apply nat_le_complete.  assumption.  symmetry  in |- *.
+  rewrite H3.  replace (leb (S (nat_of_N x0)) (L + n0)) with true.
+  reflexivity.  symmetry  in |- *.  elim (le_le_S_eq (nat_of_N x0) (L + n0)).
+  intro.  apply leb_correct.  assumption.  intro.  rewrite <- H5 in y1.
+  rewrite (N_of_nat_of_N x0) in y1.  rewrite (Neqb_correct x0) in y1.
+  discriminate.  apply le_S_n.  apply leb_complete.  assumption.  symmetry  in |- *.
   apply minus_plus.  rewrite (Splus_nm L n0).  rewrite (plus_Snm_nSm L n0).
   rewrite H0.  apply le_plus_minus.  apply lt_le_weak.  apply lt_O_minus_lt.
   rewrite <- H0.  auto with arith.  
@@ -866,7 +867,7 @@ Lemma var_env'_to_env''_lemma3 :
  In _ (Evar_env'' L U) (var_env'_to_env'' L U ve) /\
  (forall x : ad,
   var_lu L U x = true ->
-  in_dom _ x (var_env'_to_env'' L U ve) = ve (nat_of_ad x)).
+  in_dom _ x (var_env'_to_env'' L U ve) = ve (nat_of_N x)).
 Proof.
   intros L U ve.  unfold var_env'_to_env'' in |- *.
   elim (var_env'_to_var_env''_lemma2 (U - L) L U ve (refl_equal (U - L))).
@@ -887,8 +888,8 @@ Proof.
   rewrite (eval_be_independent L U ve (var_env''_to_env' x) H4 be1) in H2.
   assumption.  assumption.  exact (proj1 H3).  unfold seq_eq in |- *.  intros.
   unfold var_env''_to_env' in |- *.  symmetry  in |- *.
-  replace (ve n) with (ve (nat_of_ad (ad_of_nat n))).  apply (proj2 H3).
-  apply nat_lu_var_lu.  assumption.  rewrite (nat_of_ad_of_nat n).  reflexivity.
+  replace (ve n) with (ve (nat_of_N (N_of_nat n))).  apply (proj2 H3).
+  apply nat_lu_var_lu.  assumption.  rewrite (nat_of_N_of_nat n).  reflexivity.
   reflexivity.
 Qed.
 
@@ -1086,7 +1087,7 @@ Definition Brel_env := Map ad.
 Definition trans_env := ad -> bool_expr.
 Definition Btrans_env := Map ad.
 Definition re_put (re : rel_env) (x : ad) (be : bool_expr) : rel_env :=
-  fun y => if ad_eq x y then be else re y.
+  fun y => if Neqb x y then be else re y.
 
 Inductive mu_form : Set :=
   | mu_0 : mu_form
@@ -1109,7 +1110,7 @@ Fixpoint mu_rel_free (P : ad) (f : mu_form) {struct f} : bool :=
   | mu_0 => false
   | mu_1 => false
   | mu_ap _ => false
-  | mu_rel_var Q => ad_eq P Q
+  | mu_rel_var Q => Neqb P Q
   | mu_neg g => mu_rel_free P g
   | mu_and g h => mu_rel_free P g || mu_rel_free P h
   | mu_or g h => mu_rel_free P g || mu_rel_free P h
@@ -1117,7 +1118,7 @@ Fixpoint mu_rel_free (P : ad) (f : mu_form) {struct f} : bool :=
   | mu_iff g h => mu_rel_free P g || mu_rel_free P h
   | mu_all t g => mu_rel_free P g
   | mu_ex t g => mu_rel_free P g
-  | mu_mu Q g => negb (ad_eq P Q) && mu_rel_free P g
+  | mu_mu Q g => negb (Neqb P Q) && mu_rel_free P g
   end.
 
 (* (mu_t_free t f) means that there is a free occurrence of the transition
@@ -1133,8 +1134,8 @@ Fixpoint mu_t_free (t : ad) (f : mu_form) {struct f} : bool :=
   | mu_or g h => mu_t_free t g || mu_t_free t h
   | mu_impl g h => mu_t_free t g || mu_t_free t h
   | mu_iff g h => mu_t_free t g || mu_t_free t h
-  | mu_all u g => ad_eq t u || mu_t_free t g
-  | mu_ex u g => ad_eq t u || mu_t_free t g
+  | mu_all u g => Neqb t u || mu_t_free t g
+  | mu_ex u g => Neqb t u || mu_t_free t g
   | mu_mu Q g => mu_t_free t g
   end.
 
@@ -1523,7 +1524,7 @@ Fixpoint BDDiter (f : BDDconfig -> ad -> BDDconfig * ad)
   | S m =>
       match f cfg node with
       | (cfg1, node1) =>
-          if ad_eq node node1 then (cfg1, node1) else BDDiter f cfg1 node1 m
+          if Neqb node node1 then (cfg1, node1) else BDDiter f cfg1 node1 m
       end
   end.
 
@@ -1533,7 +1534,7 @@ Fixpoint BDDiter2n (f : BDDconfig -> ad -> BDDconfig * ad)
   match n with
   | O =>
       match f cfg node with
-      | (cfg1, node1) => (cfg1, node1, ad_eq node node1)
+      | (cfg1, node1) => (cfg1, node1, Neqb node node1)
       end
   | S m =>
       match BDDiter2n f cfg node m with
@@ -1543,7 +1544,7 @@ Fixpoint BDDiter2n (f : BDDconfig -> ad -> BDDconfig * ad)
   end.
 
 Definition cfgnode_eq (cfgnode1 cfgnode2 : BDDconfig * ad) :=
-  ad_eq (snd cfgnode1) (snd cfgnode2).
+  Neqb (snd cfgnode1) (snd cfgnode2).
 
 Lemma BDDiter_as_iter :
  forall (n : nat) (cfg : BDDconfig) (node : ad)
@@ -1613,7 +1614,7 @@ Inductive f_P_even (P : ad) : mu_form -> bool -> Prop :=
       f_P_even P (mu_rel_var Q) true
       (* one new clause added ... *)
   | mu_rel_var_odd :
-      forall Q : ad, ad_eq P Q = false -> f_P_even P (mu_rel_var Q) false
+      forall Q : ad, Neqb P Q = false -> f_P_even P (mu_rel_var Q) false
   | mu_neg_odd :
       forall f : mu_form, f_P_even P f true -> f_P_even P (mu_neg f) false
   | mu_neg_even :
@@ -1668,10 +1669,10 @@ Inductive f_P_even (P : ad) : mu_form -> bool -> Prop :=
   | mu_mu_P_odd : forall f : mu_form, f_P_even P (mu_mu P f) false
   | mu_mu_Q_even :
       forall (Q : ad) (f : mu_form),
-      ad_eq P Q = false -> f_P_even P f true -> f_P_even P (mu_mu Q f) true
+      Neqb P Q = false -> f_P_even P f true -> f_P_even P (mu_mu Q f) true
   | mu_mu_Q_odd :
       forall (Q : ad) (f : mu_form),
-      ad_eq P Q = false -> f_P_even P f false -> f_P_even P (mu_mu Q f) false.
+      Neqb P Q = false -> f_P_even P f false -> f_P_even P (mu_mu Q f) false.
 
 Inductive f_ok : mu_form -> Prop :=
   | mu_0_f_ok : f_ok mu_0
@@ -1692,22 +1693,22 @@ Inductive f_ok : mu_form -> Prop :=
 
 Definition cfg_ul_bre_ok (cfg : BDDconfig) (ul : list ad) 
   (bre : Brel_env) :=
-  forall P node : ad, MapGet _ bre P = SOME _ node -> used_node' cfg ul node.
+  forall P node : ad, MapGet _ bre P = Some node -> used_node' cfg ul node.
 
 Definition cfg_ul_bte_ok (cfg : BDDconfig) (ul : list ad)
   (bte : Btrans_env) :=
-  forall t node : ad, MapGet _ bte t = SOME _ node -> used_node' cfg ul node.
+  forall t node : ad, MapGet _ bte t = Some node -> used_node' cfg ul node.
 
 Definition cfg_re_bre_ok (cfg : BDDconfig) (re : rel_env) 
   (bre : Brel_env) :=
   forall P node : ad,
-  MapGet _ bre P = SOME _ node ->
+  MapGet _ bre P = Some node ->
   bool_fun_eq (bool_fun_of_BDD cfg node) (bool_fun_of_bool_expr (re P)).
 
 Definition cfg_te_bte_ok (cfg : BDDconfig) (te : trans_env)
   (bte : Btrans_env) :=
   forall t node : ad,
-  MapGet _ bte t = SOME _ node ->
+  MapGet _ bte t = Some node ->
   bool_fun_eq (bool_fun_of_BDD cfg node) (bool_fun_of_bool_expr (te t)).
 
 Definition f_bre_ok (f : mu_form) (bre : Brel_env) :=
@@ -1784,7 +1785,7 @@ Lemma mu_all_bte_ok :
  f_bte_ok (mu_all t g) bte -> f_bte_ok g bte.
 Proof.
   intros.  unfold f_bte_ok in |- *.  intros.  apply H.  simpl in |- *.  rewrite H0.
-  elim (ad_eq t0 t); reflexivity.
+  elim (Neqb t0 t); reflexivity.
 Qed.
 
 Lemma mu_ex_bre_ok :
@@ -1799,7 +1800,7 @@ Lemma mu_ex_bte_ok :
  f_bte_ok (mu_ex t g) bte -> f_bte_ok g bte.
 Proof.
   intros.  unfold f_bte_ok in |- *.  intros.  apply H.  simpl in |- *.  rewrite H0.
-  elim (ad_eq t0 t); reflexivity.
+  elim (Neqb t0 t); reflexivity.
 Qed.
 
 Lemma mu_mu_bre_ok :
@@ -1808,9 +1809,9 @@ Lemma mu_mu_bre_ok :
 Proof.
   intros.  unfold f_bre_ok in |- *.  unfold in_dom in |- *.  intro.
   rewrite (MapPut_semantics ad bre P node P0).
-  elim (sumbool_of_bool (ad_eq P P0)).  intro y.  rewrite y.  reflexivity.  
+  elim (sumbool_of_bool (Neqb P P0)).  intro y.  rewrite y.  reflexivity.  
   intro y.  rewrite y.  intro.  unfold f_bre_ok in H.  unfold in_dom in H.
-  apply H.  simpl in |- *.  rewrite (ad_eq_comm P0 P).  rewrite y.  rewrite H0.
+  apply H.  simpl in |- *.  rewrite (Neqb_comm P0 P).  rewrite y.  rewrite H0.
   reflexivity.
 Qed.
 
@@ -1877,7 +1878,7 @@ Lemma cfg_re_bre_ok_put :
  cfg_re_bre_ok cfg (re_put re P be) (MapPut _ bre P node).
 Proof.
   intros.  unfold cfg_re_bre_ok in |- *.  unfold re_put in |- *.  intros P0 node0.
-  rewrite (MapPut_semantics ad bre P node P0).  elim (ad_eq P P0).  intro.
+  rewrite (MapPut_semantics ad bre P node P0).  elim (Neqb P P0).  intro.
   inversion H1.  rewrite <- H3.  assumption.  intro.  apply H.  assumption.
 Qed.
 
@@ -1887,7 +1888,7 @@ Lemma cfg_ul_bre_ok_put :
  cfg_ul_bre_ok cfg (node :: ul) (MapPut _ bre P node).
 Proof.
   intros.  unfold cfg_ul_bre_ok in |- *.  intros P0 node0.
-  rewrite (MapPut_semantics _ bre P node).  elim (sumbool_of_bool (ad_eq P P0)).
+  rewrite (MapPut_semantics _ bre P node).  elim (sumbool_of_bool (Neqb P P0)).
   intro y.  rewrite y.  intros.  injection H0.  intros.  rewrite <- H1.
   apply used_node'_cons_node_ul.  intro y.  rewrite y.  intro.
   apply used_node'_cons_node'_ul.  apply H with (P := P0).  assumption.  
@@ -1988,17 +1989,17 @@ Proof.
   intros.
   elim (cfg_ul_te_bte_ok_preserved cfg cfg1 ul te bte H0 H15 H2 H5 H6 H16).
   intros.  split.  assumption.  split.  assumption.  split.  assumption.  
-  split.  assumption.  elim (sumbool_of_bool (ad_eq node node1)).  intro y.
+  split.  assumption.  elim (sumbool_of_bool (Neqb node node1)).  intro y.
   rewrite y.  symmetry  in |- *.  apply be_eq_dec_correct.
   apply bool_fun_eq_trans with (bf2 := bool_fun_of_BDD cfg node).
   apply bool_fun_eq_sym; assumption.
   apply bool_fun_eq_trans with (bf2 := bool_fun_of_BDD cfg1 node1).
-  rewrite <- (ad_eq_complete _ _ y).  apply bool_fun_eq_sym.
+  rewrite <- (Neqb_complete _ _ y).  apply bool_fun_eq_sym.
   apply used_nodes_preserved'_bool_fun with (ul := node :: ul).  assumption.  
   assumption.  assumption.  assumption.  apply used_node'_cons_node_ul.  
   assumption.  intro y.
   elim (sumbool_of_bool (be_eq_dec be (f g (re_put re P be)))).  intro y0.
-  cut (ad_eq node node1 = true).  intro.  rewrite H24 in y.  discriminate.  
+  cut (Neqb node node1 = true).  intro.  rewrite H24 in y.  discriminate.  
   apply BDDunique with (cfg := cfg1).  assumption.  
   apply used_node'_OK with (ul := node :: ul).  assumption.  
   apply used_nodes_preserved_list_OK with (cfg := cfg).  assumption.  assumption.  
@@ -2186,10 +2187,10 @@ Proof.
   intros.  elim H3.  intro.  cut (var_lu 0 (2 * N) x = true).  intro.
   unfold var_lu in H5.  elim (andb_prop _ _ H5).  intros.  unfold var_lu in |- *.
   rewrite H6.  unfold andb in |- *.  unfold ifb in |- *.  apply not_false_is_true.
-  unfold not in |- *; intro.  apply H2.  replace x with (ad_of_nat (nat_of_ad x)).
-  apply in_lx'.  apply le_S_n.  fold (N < S (nat_of_ad x)) in |- *.
-  apply nat_le_complete_conv.  assumption.  apply nat_le_complete.  assumption.
-  apply ad_of_nat_of_ad.  apply be_ok_be_x_free with (be := t).  assumption.  
+  unfold not in |- *; intro.  apply H2.  replace x with (N_of_nat (nat_of_N x)).
+  apply in_lx'.  apply le_S_n.  fold (N < S (nat_of_N x)) in |- *.
+  apply leb_complete_conv.  assumption.  apply leb_complete.  assumption.
+  apply N_of_nat_of_N.  apply be_ok_be_x_free with (be := t).  assumption.  
   assumption.  intros.  decompose [and] H4.  apply be_ok_be_x_free with (be := be).
   assumption.  assumption.  
 Qed.
@@ -2203,10 +2204,10 @@ Proof.
   intros.  elim H3.  intro.  cut (var_lu 0 (2 * N) x = true).  intro.
   unfold var_lu in H5.  elim (andb_prop _ _ H5).  intros.  unfold var_lu in |- *.
   rewrite H6.  unfold andb in |- *.  unfold ifb in |- *.  apply not_false_is_true.
-  unfold not in |- *; intro.  apply H2.  replace x with (ad_of_nat (nat_of_ad x)).
-  apply in_lx'.  apply le_S_n.  fold (N < S (nat_of_ad x)) in |- *.
-  apply nat_le_complete_conv.  assumption.  apply nat_le_complete.  assumption.
-  apply ad_of_nat_of_ad.  apply be_ok_be_x_free with (be := t).  assumption.
+  unfold not in |- *; intro.  apply H2.  replace x with (N_of_nat (nat_of_N x)).
+  apply in_lx'.  apply le_S_n.  fold (N < S (nat_of_N x)) in |- *.
+  apply leb_complete_conv.  assumption.  apply leb_complete.  assumption.
+  apply N_of_nat_of_N.  apply be_ok_be_x_free with (be := t).  assumption.
   assumption.  intros.  decompose [and] H4.  apply be_ok_be_x_free with (be := be).
   assumption.  assumption.
 Qed.
@@ -2237,10 +2238,10 @@ Proof.
   assumption.  unfold re_to_be_inc in |- *.  split.  intros.  apply be_le_refl.  split.
   unfold re_to_be_dec in |- *.  intros.  apply be_le_refl.  intros.  apply be_eq_refl.
   simpl in |- *.  intros.  split.  intros.  apply H1.  split.  intros.
-  unfold re_to_be_inc in |- *.  intros.  unfold re_put in |- *.  elim (ad_eq P a).  assumption.
+  unfold re_to_be_inc in |- *.  intros.  unfold re_put in |- *.  elim (Neqb P a).  assumption.
   apply be_le_refl.  split.  intros.  inversion H1.  unfold re_to_be_dec in |- *.
   unfold re_put in |- *.  rewrite H3.  intros.  apply be_le_refl.  intros.
-  apply H1.  simpl in |- *.  apply ad_eq_correct.
+  apply H1.  simpl in |- *.  apply Neqb_correct.
   simpl in |- *.  intros.  elim H.  clear H.  intros.  split.  intros.  apply neg_ok.
   apply H.  assumption.  split.  unfold re_to_be_inc in |- *.  intros.
   apply be_le_not_1.  unfold re_to_be_dec in H2.
@@ -2362,7 +2363,7 @@ Proof.
   fold (be_iter2n (fun be : bool_expr => mu_eval m (re_put re a be)) Zero N)
    in |- *.
   apply be_iter2n_prop_preserved.  apply zero_ok.  intros.  apply H6.
-  unfold re_put in |- *.  unfold ad_to_be_ok in |- *.  intros.  elim (ad_eq a x).  assumption.  
+  unfold re_put in |- *.  unfold ad_to_be_ok in |- *.  intros.  elim (Neqb a x).  assumption.  
   apply H.  split.
   intros.  unfold re_to_be_inc in |- *.  intros.
   fold
@@ -2376,40 +2377,40 @@ Proof.
   unfold re_to_be_inc in H2.  inversion H.  clear H12 H11 f0.
   apply be_eq_le.
   apply be_iter2n_eq_preserved_2.  apply be_eq_refl.  intros.
-  apply H9.  unfold ad_to_be_eq in |- *.  unfold re_put in |- *.  intro.  elim (ad_eq a x).
+  apply H9.  unfold ad_to_be_eq in |- *.  unfold re_put in |- *.  intro.  elim (Neqb a x).
   intros.  assumption.  intros.  apply be_eq_refl.  intros.  apply H9.
   unfold ad_to_be_eq1 in |- *. intros.
-  unfold re_put in |- *.  intro.  elim (ad_eq a x).  apply H10.  reflexivity.
+  unfold re_put in |- *.  intro.  elim (Neqb a x).  apply H10.  reflexivity.
   intros.  apply H9.  unfold ad_to_be_eq1 in |- *.  unfold re_put in |- *.  intro.
-  elim (ad_eq a x).  intros.  assumption.  intros.  apply be_eq_refl.
+  elim (Neqb a x).  intros.  assumption.  intros.  apply be_eq_refl.
   rename H13 into H14.
   apply be_iter2n_le_preserved.
   apply be_le_refl.  intros.  apply H9.  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.
-  intro.  elim (ad_eq a x).  intros.  assumption.  intros.  apply be_eq_refl.
+  intro.  elim (Neqb a x).  intros.  assumption.  intros.  apply be_eq_refl.
   intros.  apply H9.
-  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.  intro.  elim (ad_eq a x).
+  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.  intro.  elim (Neqb a x).
   intros.  assumption.  intros.  apply be_eq_refl.  intros.
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re P be1) a be2')).
   apply H2.  assumption.  assumption.  
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re a be2') P be1)).
   rename H13 into H15.
   apply be_eq_le.  apply H9.  unfold ad_to_be_eq1 in |- *.  intro.  unfold re_put in |- *.
-  elim (sumbool_of_bool (ad_eq P x)).  intros y H16.  rewrite y.
-  cut (ad_eq a x = false).
+  elim (sumbool_of_bool (Neqb P x)).  intros y H16.  rewrite y.
+  cut (Neqb a x = false).
   intro H17.
   rewrite H17.  apply be_eq_refl.  
-  rewrite <- (ad_eq_complete _ _ y).  rewrite (ad_eq_comm a P).  assumption.  
+  rewrite <- (Neqb_complete _ _ y).  rewrite (Neqb_comm a P).  assumption.  
   intros y H16.  rewrite y.  apply be_eq_refl.  
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re a be2') P be2)).
   apply H2.  assumption.  assumption.  apply be_eq_le.  apply H9.
   unfold ad_to_be_eq1 in |- *.  intro.  unfold re_put in |- *.
-  elim (sumbool_of_bool (ad_eq P x)).
+  elim (sumbool_of_bool (Neqb P x)).
   intros y H16.
   rewrite y.
-  cut (ad_eq a x = false).
+  cut (Neqb a x = false).
   intro H17.
   rewrite H17.  apply be_eq_refl.  
-  rewrite <- (ad_eq_complete _ _ y).  rewrite (ad_eq_comm a P).  assumption.  
+  rewrite <- (Neqb_complete _ _ y).  rewrite (Neqb_comm a P).  assumption.  
   intros y H16.  rewrite y.  apply be_eq_refl.  split.
   intros.  unfold re_to_be_dec in |- *.  intros.
   unfold re_to_be_dec in H7.  inversion H.  clear H12 H11 f0.
@@ -2423,12 +2424,12 @@ Proof.
       (fun be : bool_expr => mu_eval m (re_put (re_put re a be1) a be)) Zero
       N) in |- *.
   apply be_iter2n_eq_preserved_2.  apply be_eq_refl.  intros.
-  apply H9.  unfold ad_to_be_eq1 in |- *.  unfold re_put in |- *.  intro.  elim (ad_eq a x).
+  apply H9.  unfold ad_to_be_eq1 in |- *.  unfold re_put in |- *.  intro.  elim (Neqb a x).
   intros.  assumption.  intros.  apply be_eq_refl.  intros.  apply H9.
   unfold ad_to_be_eq1 in |- *.
-  unfold re_put in |- *.  intros.  elim (ad_eq a x).  assumption.  apply be_eq_refl.
+  unfold re_put in |- *.  intros.  elim (Neqb a x).  assumption.  apply be_eq_refl.
   intros.  apply H9.  unfold ad_to_be_eq1 in |- *.  unfold re_put in |- *.  intros.
-  elim (ad_eq a x).  assumption.  apply be_eq_refl.
+  elim (Neqb a x).  assumption.  apply be_eq_refl.
   fold
    (be_iter2n
       (fun be : bool_expr => mu_eval m (re_put (re_put re P be2) a be)) Zero
@@ -2439,39 +2440,39 @@ Proof.
       N) in |- *.
   apply be_iter2n_le_preserved.
   apply be_le_refl.  intros.  apply H9.  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.
-  intros.  elim (ad_eq a x).  assumption.  apply be_eq_refl.  intros.  apply H9.
-  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.  intros.  elim (ad_eq a x).
+  intros.  elim (Neqb a x).  assumption.  apply be_eq_refl.  intros.  apply H9.
+  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.  intros.  elim (Neqb a x).
   assumption.  apply be_eq_refl.  intros.
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re P be2) a be2')).
   unfold re_to_be_inc in H2.  apply H2.  assumption.  assumption.
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re a be2') P be2)).
   apply be_eq_le.  apply H9.  unfold ad_to_be_eq1 in |- *.  intros.  unfold re_put in |- *.
-  elim (sumbool_of_bool (ad_eq P x)).  intro y.  rewrite y.
-  cut (ad_eq a x = false).
+  elim (sumbool_of_bool (Neqb P x)).  intro y.  rewrite y.
+  cut (Neqb a x = false).
   intro H17.
   rewrite H17.  apply be_eq_refl.
-  rewrite <- (ad_eq_complete _ _ y).  rewrite (ad_eq_comm a P).  assumption.
+  rewrite <- (Neqb_complete _ _ y).  rewrite (Neqb_comm a P).  assumption.
   intro y.  rewrite y.  apply be_eq_refl.
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re a be2') P be1)).
   apply H7.  assumption.  assumption.  apply be_eq_le.  apply H9.
   unfold ad_to_be_eq1 in |- *.  intros.  unfold re_put in |- *.
-  elim (sumbool_of_bool (ad_eq P x)).  intro y.  rewrite y.
-  cut (ad_eq a x = false).
+  elim (sumbool_of_bool (Neqb P x)).  intro y.  rewrite y.
+  cut (Neqb a x = false).
   intro H17.
   rewrite H17.  apply be_eq_refl.
-  rewrite <- (ad_eq_complete _ _ y).  rewrite (ad_eq_comm a P).  assumption.
+  rewrite <- (Neqb_complete _ _ y).  rewrite (Neqb_comm a P).  assumption.
   intro y.  rewrite y.  apply be_eq_refl.  intros.
   fold (be_iter2n (fun be : bool_expr => mu_eval m (re_put re1 a be)) Zero N)
    in |- *.
   fold (be_iter2n (fun be : bool_expr => mu_eval m (re_put re2 a be)) Zero N)
    in |- *.
   apply be_iter2n_eq_preserved_2.  apply be_eq_refl. 
-  intros.  apply H9.  unfold ad_to_be_eq1, re_put in |- *.  intros.  elim (ad_eq a x).
+  intros.  apply H9.  unfold ad_to_be_eq1, re_put in |- *.  intros.  elim (Neqb a x).
   assumption.  apply be_eq_refl.  intros.  apply H9.  unfold ad_to_be_eq1, re_put in |- *.
-  intros.  elim (ad_eq a x).  assumption.  apply be_eq_refl.  intros.  apply H9.
-  unfold ad_to_be_eq1, re_put in |- *.  intros.  elim (sumbool_of_bool (ad_eq a x)).
+  intros.  elim (Neqb a x).  assumption.  apply be_eq_refl.  intros.  apply H9.
+  unfold ad_to_be_eq1, re_put in |- *.  intros.  elim (sumbool_of_bool (Neqb a x)).
   intro y.  rewrite y.  assumption.  intro y.  rewrite y.  apply H.  simpl in |- *.
-  rewrite (ad_eq_comm x a).  rewrite y.  rewrite H10.  reflexivity.  
+  rewrite (Neqb_comm x a).  rewrite y.  rewrite H10.  reflexivity.  
 Qed.
 
 Lemma mu_eval_lemma1 :
@@ -2632,7 +2633,7 @@ Section Mu_eval_as_fix.
    forall be : bool_expr, be_ok (var_lu 0 N) be -> be_ok (var_lu 0 N) (mf be).
   Proof.
     unfold mf in |- *.  intros.  elim (mu_eval_lemma1 f).  intros.  apply H0.
-    unfold ad_to_be_ok, re_put in |- *.  intro.  elim (ad_eq P x).  assumption.
+    unfold ad_to_be_ok, re_put in |- *.  intro.  elim (Neqb P x).  assumption.
     apply re_ok.  assumption.  assumption.
   Qed.
 
@@ -2642,7 +2643,7 @@ Section Mu_eval_as_fix.
     unfold mf in |- *.  elim (mu_eval_lemma1 f).  intros.
     elim H0; intros H3 H2; elim H2; clear H2; intros H2 H5.
  
-    apply H5.  unfold ad_to_be_eq in |- *.  unfold re_put in |- *.  intro.  elim (ad_eq P x).
+    apply H5.  unfold ad_to_be_eq in |- *.  unfold re_put in |- *.  intro.  elim (Neqb P x).
     assumption.  apply be_eq_refl.  assumption.  assumption.  
   Qed.
  
@@ -2686,8 +2687,8 @@ Fixpoint BDDmu_eval (f : mu_form) :
   | mu_ap p => BDDvar_make gc cfg ul p
   | mu_rel_var P =>
       match MapGet _ bre P with
-      | NONE => (cfg, BDDzero)
-      | SOME node => (cfg, node)
+      | None => (cfg, BDDzero)
+      | Some node => (cfg, node)
       end
   | mu_neg g =>
       match BDDmu_eval g cfg ul bre with
@@ -2726,16 +2727,16 @@ Fixpoint BDDmu_eval (f : mu_form) :
       end
   | mu_all t g =>
       match MapGet _ bte t with
-      | NONE => (cfg, BDDzero)
-      | SOME nodet =>
+      | None => (cfg, BDDzero)
+      | Some nodet =>
           match BDDmu_eval g cfg ul bre with
           | (cfgg, nodeg) => BDDmu_all N gc cfgg (nodeg :: ul) nodet nodeg
           end
       end
   | mu_ex t g =>
       match MapGet _ bte t with
-      | NONE => (cfg, BDDzero)
-      | SOME nodet =>
+      | None => (cfg, BDDzero)
+      | Some nodet =>
           match BDDmu_eval g cfg ul bre with
           | (cfgg, nodeg) => BDDmu_ex N gc cfgg (nodeg :: ul) nodet nodeg
           end
@@ -2781,15 +2782,15 @@ Proof.
   intro P.  simpl in |- *.  unfold f_bre_ok in |- *.  unfold in_dom in |- *.  intros.  simpl in H5.
   cut
    (match MapGet ad bre P with
-    | NONE => false
-    | SOME _ => true
+    | None => false
+    | Some _ => true
     end = true).
   intro.  elim (option_sum _ (MapGet ad bre P)).  intro y.  elim y; clear y.
   intros node H8.  rewrite H8.  simpl in |- *.  split.  assumption.  split.
   apply used_node'_OK with (ul := ul).  assumption.  assumption.  
   unfold cfg_ul_bre_ok in H1.  apply H1 with (P := P).  assumption.  split.
   apply used_nodes_preserved_refl.  apply H2.  assumption.  intro y.
-  rewrite y in H7.  discriminate.  apply H5.  apply ad_eq_correct.
+  rewrite y in H7.  discriminate.  apply H5.  apply Neqb_correct.
   intro g.  simpl in |- *.  intros.  elim (prod_sum _ _ (BDDmu_eval g cfg ul bre)).
   intros cfgg H8.  elim H8; clear H8.  intros nodeg H8.
   cut
@@ -3163,7 +3164,7 @@ Proof.
   apply used_nodes_preserved_list_OK with (cfg := cfg).  assumption.  assumption.
   apply H.  assumption.  assumption.  assumption.  assumption.  assumption.
   assumption.  assumption.  assumption.  intro y.  rewrite y in H11.
-  discriminate.  apply H7.  rewrite (ad_eq_correct t).  reflexivity.  
+  discriminate.  apply H7.  rewrite (Neqb_correct t).  reflexivity.  
   apply mu_all_bte_ok with (t := t).  assumption.  apply mu_all_bre_ok with (t := t).
   assumption.
   simpl in |- *.  intros t g.  intros.  cut (f_bre_ok g bre).  cut (f_bte_ok g bte).
@@ -3217,7 +3218,7 @@ Proof.
   apply used_nodes_preserved_list_OK with (cfg := cfg).  assumption.  assumption.
   apply H.  assumption.  assumption.  assumption.  assumption.  assumption.
   assumption.  assumption.  assumption.  intro y.  rewrite y in H11.
-  discriminate.  apply H7.  rewrite (ad_eq_correct t).  reflexivity.  
+  discriminate.  apply H7.  rewrite (Neqb_correct t).  reflexivity.  
   apply mu_ex_bte_ok with (t := t).  assumption.  apply mu_ex_bre_ok with (t := t).
   assumption.
   simpl in |- *.  intros P g.  intros.  apply BDDiter2n_lemma1 with (te := te) (bte := bte).

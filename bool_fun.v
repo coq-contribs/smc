@@ -17,7 +17,7 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
+Require Import ZArith NArith Nnat Ndec Ndigits.
 Require Import Allmaps.
 
 Require Import misc.
@@ -56,7 +56,7 @@ Definition bool_fun_if (x : BDDvar) (bf1 bf2 : bool_fun) : bool_fun :=
 Definition bool_fun_var (x : BDDvar) : bool_fun := fun vb : var_env => vb x.
 
 Definition augment (vb : var_env) (x : BDDvar) (b : bool) : var_env :=
-  fun y : BDDvar => if ad_eq x y then b else vb y.
+  fun y : BDDvar => if Neqb x y then b else vb y.
 
 Definition bool_fun_restrict (bf : bool_fun) (x : BDDvar) 
   (b : bool) : bool_fun := fun vb : var_env => bf (augment vb x b).
@@ -425,7 +425,7 @@ Lemma bool_fun_if_restrict_true :
    (bool_fun_restrict bf1 x true).
 Proof.
   intros.  unfold bool_fun_eq, bool_fun_if in |- *.  unfold bool_fun_restrict in |- *.
-  unfold augment at 1 in |- *.  rewrite (ad_eq_correct x).  simpl in |- *.  reflexivity.
+  unfold augment at 1 in |- *.  rewrite (Neqb_correct x).  simpl in |- *.  reflexivity.
 Qed.
 
 Lemma bool_fun_if_restrict_false :
@@ -434,17 +434,17 @@ Lemma bool_fun_if_restrict_false :
    (bool_fun_restrict bf2 x false).
 Proof.
   intros.  unfold bool_fun_eq, bool_fun_if in |- *.  unfold bool_fun_restrict in |- *.
-  unfold augment at 1 in |- *.  rewrite (ad_eq_correct x).  simpl in |- *.  reflexivity.
+  unfold augment at 1 in |- *.  rewrite (Neqb_correct x).  simpl in |- *.  reflexivity.
 Qed.
 
 Lemma bool_fun_if_restrict :
  forall (bf1 bf2 : bool_fun) (x y : BDDvar) (b : bool),
- ad_eq x y = false ->
+ Neqb x y = false ->
  bool_fun_eq (bool_fun_restrict (bool_fun_if x bf1 bf2) y b)
    (bool_fun_if x (bool_fun_restrict bf1 y b) (bool_fun_restrict bf2 y b)).
 Proof.
   intros.  unfold bool_fun_restrict in |- *.  unfold bool_fun_eq in |- *.  intros.
-  unfold augment in |- *.  unfold bool_fun_if in |- *.  rewrite (ad_eq_comm x y) in H.
+  unfold augment in |- *.  unfold bool_fun_if in |- *.  rewrite (Neqb_comm x y) in H.
   rewrite H.  reflexivity.  
 Qed.
 
@@ -470,7 +470,7 @@ Qed.
 
 Lemma bool_fun_forall_orthogonal :
  forall (x u : BDDvar) (bf1 bf2 : bool_fun),
- ad_eq x u = false ->
+ Neqb x u = false ->
  bool_fun_eq (bool_fun_forall u (bool_fun_if x bf1 bf2))
    (bool_fun_if x (bool_fun_forall u bf1) (bool_fun_forall u bf2)).
 Proof.
@@ -492,7 +492,7 @@ Lemma bool_fun_independent_if :
  forall (x y : BDDvar) (bf1 bf2 : bool_fun),
  bool_fun_independent bf1 x ->
  bool_fun_independent bf2 x ->
- ad_eq x y = false -> bool_fun_independent (bool_fun_if y bf1 bf2) x.
+ Neqb x y = false -> bool_fun_independent (bool_fun_if y bf1 bf2) x.
 Proof.
   intros.  unfold bool_fun_independent in |- *.  intro.
   apply
@@ -500,7 +500,7 @@ Proof.
     with
       (bf2 := bool_fun_if y (bool_fun_restrict bf1 x b)
                 (bool_fun_restrict bf2 x b)).
-  apply bool_fun_if_restrict.  rewrite (ad_eq_comm x y) in H1; assumption.
+  apply bool_fun_if_restrict.  rewrite (Neqb_comm x y) in H1; assumption.
   apply bool_fun_if_preserves_eq.  apply H.  apply H0.
 Qed.
 

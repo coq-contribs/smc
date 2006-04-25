@@ -17,7 +17,7 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
+Require Import ZArith NArith Nnat Ndec Ndigits.
 Require Import Map.
 Require Import Allmaps.
 Require Import List.
@@ -49,10 +49,10 @@ Hypothesis ul_OK : used_list_OK cfg ul.
 Hypothesis used : used_node' cfg ul node.
 
 Definition BDDneg :=
-  BDDneg_1 gc cfg ul node (S (nat_of_ad (node_height cfg node))).
+  BDDneg_1 gc cfg ul node (S (nat_of_N (node_height cfg node))).
 
 Let lt_1 :
-  nat_of_ad (node_height cfg node) < S (nat_of_ad (node_height cfg node)).
+  nat_of_N (node_height cfg node) < S (nat_of_N (node_height cfg node)).
 Proof.
   unfold lt in |- *.  apply le_n.
 Qed.
@@ -62,7 +62,7 @@ Proof.
   unfold BDDneg in |- *.
   exact
    (proj1
-      (BDDneg_1_lemma gc gc_is_OK (S (nat_of_ad (node_height cfg node))) cfg
+      (BDDneg_1_lemma gc gc_is_OK (S (nat_of_N (node_height cfg node))) cfg
          ul node lt_1 cfg_OK ul_OK used)).
 Qed.
 
@@ -72,7 +72,7 @@ Proof.
   exact
    (proj1
       (proj2
-         (BDDneg_1_lemma gc gc_is_OK (S (nat_of_ad (node_height cfg node)))
+         (BDDneg_1_lemma gc gc_is_OK (S (nat_of_N (node_height cfg node)))
             cfg ul node lt_1 cfg_OK ul_OK used))).
 Qed.
 
@@ -84,7 +84,7 @@ Proof.
       (proj2
          (proj2
             (BDDneg_1_lemma gc gc_is_OK
-               (S (nat_of_ad (node_height cfg node))) cfg ul node lt_1 cfg_OK
+               (S (nat_of_N (node_height cfg node))) cfg ul node lt_1 cfg_OK
                ul_OK used)))).
 Qed.
 
@@ -99,7 +99,7 @@ Proof.
          (proj2
             (proj2
                (BDDneg_1_lemma gc gc_is_OK
-                  (S (nat_of_ad (node_height cfg node))) cfg ul node lt_1
+                  (S (nat_of_N (node_height cfg node))) cfg ul node lt_1
                   cfg_OK ul_OK used))))).
 Qed.
 
@@ -115,7 +115,7 @@ Proof.
 Qed.
 
 Lemma BDDneg_var_eq :
- ad_eq (node_height (fst BDDneg) (snd BDDneg)) (node_height cfg node) = true.
+ Neqb (node_height (fst BDDneg) (snd BDDneg)) (node_height cfg node) = true.
 Proof.
   unfold BDDneg in |- *.
   exact
@@ -124,7 +124,7 @@ Proof.
          (proj2
             (proj2
                (BDDneg_1_lemma gc gc_is_OK
-                  (S (nat_of_ad (node_height cfg node))) cfg ul node lt_1
+                  (S (nat_of_N (node_height cfg node))) cfg ul node lt_1
                   cfg_OK ul_OK used))))).
 Qed.
 
@@ -146,13 +146,13 @@ Hypothesis used2 : used_node' cfg ul node2.
 Definition BDDor :=
   BDDor_1 gc cfg ul node1 node2
     (S
-       (max (nat_of_ad (node_height cfg node1))
-          (nat_of_ad (node_height cfg node2)))).
+       (max (nat_of_N (node_height cfg node1))
+          (nat_of_N (node_height cfg node2)))).
 Let lt_1 :
-  max (nat_of_ad (node_height cfg node1)) (nat_of_ad (node_height cfg node2)) <
+  max (nat_of_N (node_height cfg node1)) (nat_of_N (node_height cfg node2)) <
   S
-    (max (nat_of_ad (node_height cfg node1))
-       (nat_of_ad (node_height cfg node2))).
+    (max (nat_of_N (node_height cfg node1))
+       (nat_of_N (node_height cfg node2))).
 Proof.
   unfold lt in |- *.  apply le_n.
 Qed.
@@ -205,7 +205,7 @@ Proof.
 Qed.
 
 Lemma BDDor_var_le :
- ad_le (node_height (fst BDDor) (snd BDDor))
+ Nle (node_height (fst BDDor) (snd BDDor))
    (BDDvar_max (node_height cfg node1) (node_height cfg node2)) = true.
 Proof.
   exact
@@ -653,7 +653,7 @@ Proof.
 Qed.
 
 Lemma BDDand_var_le :
- ad_le (node_height (fst BDDand) (snd BDDand))
+ Nle (node_height (fst BDDand) (snd BDDand))
    (BDDvar_max (node_height cfg node1) (node_height cfg node2)) = true.
 Proof.
   unfold BDDand in |- *.  elim (prod_sum _ _ (BDDneg cfg ul node1)).  intros cfg1 H.
@@ -682,23 +682,23 @@ Proof.
   transitivity (node_height cfg1 node2).
   replace cfg2 with (fst (BDDneg cfg1 (node1' :: ul) node2)).
   replace node2' with (snd (BDDneg cfg1 (node1' :: ul) node2)).
-  apply ad_eq_complete.  apply BDDneg_var_eq.  assumption.  assumption.  
+  apply Neqb_complete.  apply BDDneg_var_eq.  assumption.  assumption.  
   assumption.  rewrite H0.  reflexivity.  rewrite H0.  reflexivity.  
-  apply ad_eq_complete.  replace cfg1 with (fst (BDDneg cfg ul node1)).
+  apply Neqb_complete.  replace cfg1 with (fst (BDDneg cfg ul node1)).
   apply used_nodes_preserved'_node_height_eq with (ul := ul).  assumption.  
   apply BDDneg_config_OK.  assumption.  assumption.  assumption.  
   apply BDDneg_used_nodes_preserved.  assumption.  assumption.  assumption.
   assumption.  assumption.  rewrite H.  reflexivity.  
-  transitivity (node_height cfg1 node1').  apply ad_eq_complete.
+  transitivity (node_height cfg1 node1').  apply Neqb_complete.
   replace cfg2 with (fst (BDDneg cfg1 (node1' :: ul) node2)).
   apply used_nodes_preserved'_node_height_eq with (ul := node1' :: ul).
   assumption.  apply BDDneg_config_OK.  assumption.  assumption.  assumption.  
   apply BDDneg_used_nodes_preserved.  assumption.  assumption.  assumption.  
   assumption.  apply used_node'_cons_node_ul.  rewrite H0.  reflexivity.  
   replace cfg1 with (fst (BDDneg cfg ul node1)).
-  replace node1' with (snd (BDDneg cfg ul node1)).  apply ad_eq_complete.
+  replace node1' with (snd (BDDneg cfg ul node1)).  apply Neqb_complete.
   apply BDDneg_var_eq.  assumption.  assumption.  assumption.  rewrite H.
-  reflexivity.  rewrite H.  reflexivity.  symmetry  in |- *.  apply ad_eq_complete.
+  reflexivity.  rewrite H.  reflexivity.  symmetry  in |- *.  apply Neqb_complete.
   apply BDDneg_var_eq.
   replace cfg3 with (fst (BDDor cfg2 (node2' :: node1' :: ul) node1' node2')).
   apply BDDor_config_OK.  assumption.  assumption.  apply used_node'_cons_node'_ul.

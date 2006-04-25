@@ -18,7 +18,7 @@ Require Import Compare.
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
+Require Import ZArith NArith Nnat Ndec Ndigits.
 Require Import Allmaps.
 Require Import List.
 
@@ -28,21 +28,21 @@ Definition BDDvar := ad.
 
 Definition BDDcompare (x y : BDDvar) :=
   match x, y with
-  | ad_z, ad_z => Datatypes.Eq
-  | ad_z, ad_x _ => Datatypes.Lt
-  | ad_x _, ad_z => Datatypes.Gt
-  | ad_x p1, ad_x p2 => (p1 ?= p2)%positive Datatypes.Eq
+  | N0, N0 => Datatypes.Eq
+  | N0, Npos _ => Datatypes.Lt
+  | Npos _, N0 => Datatypes.Gt
+  | Npos p1, Npos p2 => (p1 ?= p2)%positive Datatypes.Eq
   end.
 
 Definition ad_S (a : ad) :=
   match a with
-  | ad_z => ad_x 1
-  | ad_x p => ad_x (Psucc p)
+  | N0 => Npos 1
+  | Npos p => Npos (Psucc p)
   end.
 
-Definition max (m n : nat) := if nat_le m n then n else m.
+Definition max (m n : nat) := if leb m n then n else m.
 
-Definition BDDvar_max (x y : BDDvar) := if ad_le x y then y else x.
+Definition BDDvar_max (x y : BDDvar) := if Nle x y then y else x.
 
 Inductive no_dup_list (A : Set) : list A -> Prop :=
   | no_dup_nil : no_dup_list A nil
@@ -50,7 +50,7 @@ Inductive no_dup_list (A : Set) : list A -> Prop :=
       forall (a : A) (l : list A),
       ~ In a l -> no_dup_list _ l -> no_dup_list _ (a :: l).
 
-Lemma ad_S_is_S : forall a : ad, nat_of_ad (ad_S a) = S (nat_of_ad a).
+Lemma ad_S_is_S : forall a : ad, nat_of_N (ad_S a) = S (nat_of_N a).
 Proof.
   simple induction a. reflexivity.  simpl in |- *. unfold nat_of_P in |- *. intro.
   exact (Pmult_nat_succ_morphism p 1).
@@ -73,7 +73,7 @@ Qed.
 
 Lemma BDDcompare_lt :
  forall x y : BDDvar,
- BDDcompare x y = Datatypes.Lt -> nat_of_ad x < nat_of_ad y.
+ BDDcompare x y = Datatypes.Lt -> nat_of_N x < nat_of_N y.
 Proof.
   double induction x y.  simpl in |- *.  intro.  discriminate.  simpl in |- *.  intros.
   cut (exists h : nat, nat_of_P p = S h).  intro.  inversion H0.  rewrite H1.
@@ -83,7 +83,7 @@ Qed.
 
 Lemma BDDlt_compare :
  forall x y : BDDvar,
- nat_of_ad x < nat_of_ad y -> BDDcompare x y = Datatypes.Lt.
+ nat_of_N x < nat_of_N y -> BDDcompare x y = Datatypes.Lt.
 Proof.
   double induction x y.  simpl in |- *.  intro.  absurd (0 < 0).  apply lt_n_O.  assumption.
   simpl in |- *.  reflexivity.  simpl in |- *.  intro.  cut (exists h : nat, nat_of_P p = S h).  intro.
@@ -128,7 +128,7 @@ Lemma BDDcompare_1 :
 Proof.
   intros.  elim (relation_sum (BDDcompare (ad_S x) y)).  intro H0.  elim H0; intro.
   right.  apply BDD_EGAL_complete.  assumption.  left; assumption.  intro.
-  absurd (nat_of_ad x < nat_of_ad x).  apply lt_irrefl.  apply lt_trans_1 with (y := nat_of_ad y).
+  absurd (nat_of_N x < nat_of_N x).  apply lt_irrefl.  apply lt_trans_1 with (y := nat_of_N y).
   apply BDDcompare_lt.  assumption.  rewrite <- (ad_S_is_S x).  apply BDDcompare_lt.
   apply BDDcompare_sup_inf.  assumption.
 Qed.
@@ -144,26 +144,26 @@ Qed.
 Lemma andb3_lemma_1 :
  forall x x0 y y0 z z0 : ad,
  (x, (y, z)) <> (x0, (y0, z0)) ->
- ad_eq x x0 && (ad_eq y y0 && ad_eq z z0) = false.
+ Neqb x x0 && (Neqb y y0 && Neqb z z0) = false.
 Proof.
-  intros x x0 y y0 z z0 H.  elim (sumbool_of_bool (ad_eq x x0)).  intro H0.
-  elim (sumbool_of_bool (ad_eq y y0)).  intro H1.  elim (sumbool_of_bool (ad_eq z z0)).
-  intro H2.  absurd ((x, (y, z)) = (x0, (y0, z0))).  assumption.  rewrite (ad_eq_complete _ _ H0).
-  rewrite (ad_eq_complete _ _ H1).  rewrite (ad_eq_complete _ _ H2).  reflexivity.
+  intros x x0 y y0 z z0 H.  elim (sumbool_of_bool (Neqb x x0)).  intro H0.
+  elim (sumbool_of_bool (Neqb y y0)).  intro H1.  elim (sumbool_of_bool (Neqb z z0)).
+  intro H2.  absurd ((x, (y, z)) = (x0, (y0, z0))).  assumption.  rewrite (Neqb_complete _ _ H0).
+  rewrite (Neqb_complete _ _ H1).  rewrite (Neqb_complete _ _ H2).  reflexivity.
   intro H2.  rewrite H0.  rewrite H1.  rewrite H2.  reflexivity.  intro H1.  rewrite H0.
   rewrite H1.  reflexivity.  intro H0.  rewrite H0.  reflexivity.  
 Qed.
 
 Lemma ad_S_le_then_neq :
- forall x y : ad, ad_le (ad_S x) y = true -> ad_eq x y = false.
+ forall x y : ad, Nle (ad_S x) y = true -> Neqb x y = false.
 Proof.
-  intros.  cut (ad_eq x y = true \/ ad_eq x y = false).  intro.  elim H0.
-  clear H0.  intro.  cut (x = y).  intro.  rewrite H1 in H.  unfold ad_le in H.
+  intros.  cut (Neqb x y = true \/ Neqb x y = false).  intro.  elim H0.
+  clear H0.  intro.  cut (x = y).  intro.  rewrite H1 in H.  unfold Nle in H.
   rewrite (ad_S_is_S y) in H.
-  cut (nat_le (S (nat_of_ad y)) (nat_of_ad y) = false).  rewrite H.  intro.
-  discriminate H2.  cut (nat_of_ad y < S (nat_of_ad y)).  intro.
-  apply nat_le_correct_conv.  assumption.  unfold lt in |- *.  trivial.
-  apply ad_eq_complete.  assumption.  trivial. elim (ad_eq x y). auto. auto.
+  cut (leb (S (nat_of_N y)) (nat_of_N y) = false).  rewrite H.  intro.
+  discriminate H2.  cut (nat_of_N y < S (nat_of_N y)).  intro.
+  apply leb_correct_conv.  assumption.  unfold lt in |- *.  trivial.
+  apply Neqb_complete.  assumption.  trivial. elim (Neqb x y). auto. auto.
 Qed.
 
 Lemma BDD_EGAL_correct : forall x : BDDvar, BDDcompare x x = Datatypes.Eq.
@@ -202,76 +202,76 @@ Qed.
 Lemma lt_max_1_2 :
  forall x1 y1 x2 y2 : nat, x1 < x2 -> y1 < y2 -> max x1 y1 < max x2 y2.
 Proof.
-  intros x1 y1 x2 y2 H H0.  unfold max in |- *.  elim (sumbool_of_bool (nat_le x2 y2)). 
+  intros x1 y1 x2 y2 H H0.  unfold max in |- *.  elim (sumbool_of_bool (leb x2 y2)). 
   intro y.  rewrite y.
-  elim (nat_le x1 y1).  assumption.  apply lt_le_trans with (m := x2).  assumption.
-  apply nat_le_complete.  assumption.  intro y.  rewrite y.  elim (nat_le x1 y1).
-  apply lt_trans with (m := y2).  assumption.  apply nat_le_complete_conv.  assumption.
+  elim (leb x1 y1).  assumption.  apply lt_le_trans with (m := x2).  assumption.
+  apply leb_complete.  assumption.  intro y.  rewrite y.  elim (leb x1 y1).
+  apply lt_trans with (m := y2).  assumption.  apply leb_complete_conv.  assumption.
   assumption.
 Qed.
 
 Lemma lt_max_1 :
  forall x1 y1 x2 y2 : nat, x1 < x2 -> y1 < x2 -> max x1 y1 < max x2 y2.
 Proof.
-  intros x1 y1 x2 y2 H H0.  unfold max in |- *.  elim (nat_le x1 y1).
-  elim (sumbool_of_bool (nat_le x2 y2)); intro y; rewrite y.
-  apply lt_le_trans with (m := x2).  assumption.  apply nat_le_complete; assumption.
-  assumption.  elim (sumbool_of_bool (nat_le x2 y2)).  intro y.  rewrite y.  apply lt_le_trans with (m := x2).
-  assumption.  apply nat_le_complete; assumption.  intro y; rewrite y.  assumption.
+  intros x1 y1 x2 y2 H H0.  unfold max in |- *.  elim (leb x1 y1).
+  elim (sumbool_of_bool (leb x2 y2)); intro y; rewrite y.
+  apply lt_le_trans with (m := x2).  assumption.  apply leb_complete; assumption.
+  assumption.  elim (sumbool_of_bool (leb x2 y2)).  intro y.  rewrite y.  apply lt_le_trans with (m := x2).
+  assumption.  apply leb_complete; assumption.  intro y; rewrite y.  assumption.
 Qed.
 
 Lemma lt_max_2 :
  forall x1 y1 x2 y2 : nat, x1 < y2 -> y1 < y2 -> max x1 y1 < max x2 y2.
 Proof.
-  intros x1 y1 x2 y2 H H0.  unfold max in |- *.  elim (nat_le x1 y1).  elim (sumbool_of_bool (nat_le x2 y2)).
+  intros x1 y1 x2 y2 H H0.  unfold max in |- *.  elim (leb x1 y1).  elim (sumbool_of_bool (leb x2 y2)).
   intro y.  rewrite y.  assumption.  intro y.  rewrite y.  apply lt_trans with (m := y2).
-  assumption.  apply nat_le_complete_conv.  assumption.  elim (sumbool_of_bool (nat_le x2 y2)).
+  assumption.  apply leb_complete_conv.  assumption.  elim (sumbool_of_bool (leb x2 y2)).
   intro y.  rewrite y.  assumption.  intro y.  rewrite y.  apply lt_trans with (m := y2).
-  assumption.  apply nat_le_complete_conv.  assumption.
+  assumption.  apply leb_complete_conv.  assumption.
 Qed.
 
 Lemma max_x_x_eq_x : forall x : nat, max x x = x.
 Proof.
-  unfold max in |- *.  intro.  elim (nat_le x x).  reflexivity.  reflexivity.
+  unfold max in |- *.  intro.  elim (leb x x).  reflexivity.  reflexivity.
 Qed.
 
-Lemma BDDvar_le_max_2 : forall x y : BDDvar, ad_le x (BDDvar_max y x) = true.
+Lemma BDDvar_le_max_2 : forall x y : BDDvar, Nle x (BDDvar_max y x) = true.
 Proof.
-  unfold BDDvar_max in |- *.  intros x y.  elim (sumbool_of_bool (ad_le y x)).
-  intro y0.  rewrite y0.  apply ad_le_refl.  intro y0.  rewrite y0.
-  apply ad_lt_le_weak.  assumption.
+  unfold BDDvar_max in |- *.  intros x y.  elim (sumbool_of_bool (Nle y x)).
+  intro y0.  rewrite y0.  apply Nle_refl.  intro y0.  rewrite y0.
+  apply Nlt_le_weak.  assumption.
 Qed.
 
 Lemma BDDvar_max_max :
  forall x y : BDDvar,
- nat_of_ad (BDDvar_max x y) = max (nat_of_ad x) (nat_of_ad y).
+ nat_of_N (BDDvar_max x y) = max (nat_of_N x) (nat_of_N y).
 Proof.
-  unfold BDDvar_max, max in |- *.  intros.  unfold ad_le in |- *.
-  elim (nat_le (nat_of_ad x) (nat_of_ad y)).  reflexivity.  reflexivity.
+  unfold BDDvar_max, max in |- *.  intros.  unfold Nle in |- *.
+  elim (leb (nat_of_N x) (nat_of_N y)).  reflexivity.  reflexivity.
 Qed.
 
-Lemma BDDvar_le_max_1 : forall x y : BDDvar, ad_le x (BDDvar_max x y) = true.
+Lemma BDDvar_le_max_1 : forall x y : BDDvar, Nle x (BDDvar_max x y) = true.
 Proof.
-  intros x y.  elim (sumbool_of_bool (ad_le x y)); unfold BDDvar_max in |- *.
-  intro y0.  rewrite y0.  assumption.  intro y0.  rewrite y0.  apply ad_le_refl.
+  intros x y.  elim (sumbool_of_bool (Nle x y)); unfold BDDvar_max in |- *.
+  intro y0.  rewrite y0.  assumption.  intro y0.  rewrite y0.  apply Nle_refl.
 Qed.
 
 Lemma BDDvar_max_inf :
  forall x y : BDDvar, BDDcompare x y = Datatypes.Lt -> BDDvar_max x y = y.
 Proof.
-  intros.  unfold BDDvar_max in |- *.  replace (ad_le x y) with true.  reflexivity.
-  symmetry  in |- *.  unfold ad_le in |- *.  apply nat_le_correct.  apply lt_le_weak.
+  intros.  unfold BDDvar_max in |- *.  replace (Nle x y) with true.  reflexivity.
+  symmetry  in |- *.  unfold Nle in |- *.  apply leb_correct.  apply lt_le_weak.
   apply BDDcompare_lt.  assumption.
 Qed.
 
 Lemma BDDvar_max_comm : forall x y : BDDvar, BDDvar_max x y = BDDvar_max y x.
 Proof.
-  unfold BDDvar_max in |- *.  intros x y.  elim (sumbool_of_bool (ad_le x y)).
-  intro y0.  rewrite y0.  elim (sumbool_of_bool (ad_le y x)).  intro y1.  rewrite y1.
-  apply ad_le_antisym.  assumption.  assumption.  intro y1.  rewrite y1.
-  reflexivity.  intro y0.  rewrite y0.  elim (sumbool_of_bool (ad_le y x)).  intro y1.
-  rewrite y1.  reflexivity.  intro y1.  rewrite y1.  apply ad_le_antisym.
-  apply ad_lt_le_weak.  assumption.  apply ad_lt_le_weak.  assumption.
+  unfold BDDvar_max in |- *.  intros x y.  elim (sumbool_of_bool (Nle x y)).
+  intro y0.  rewrite y0.  elim (sumbool_of_bool (Nle y x)).  intro y1.  rewrite y1.
+  apply Nle_antisym.  assumption.  assumption.  intro y1.  rewrite y1.
+  reflexivity.  intro y0.  rewrite y0.  elim (sumbool_of_bool (Nle y x)).  intro y1.
+  rewrite y1.  reflexivity.  intro y1.  rewrite y1.  apply Nle_antisym.
+  apply Nlt_le_weak.  assumption.  apply Nlt_le_weak.  assumption.
 Qed.
 
 Lemma nat_gt_1_lemma : forall n : nat, n <> 0 -> n <> 1 -> 2 <= n.
@@ -282,38 +282,38 @@ Proof.
 Qed.
 
 Lemma ad_gt_1_lemma :
- forall x : ad, x <> ad_z -> x <> ad_x 1 -> ad_le (ad_x 2) x = true.
+ forall x : ad, x <> N0 -> x <> Npos 1 -> Nle (Npos 2) x = true.
 Proof.
-  intros.  unfold ad_le in |- *.  unfold nat_of_ad at 1 in |- *.  unfold nat_of_P in |- *.
-  unfold Pmult_nat in |- *.  unfold plus in |- *.  apply nat_le_correct.
+  intros.  unfold Nle in |- *.  unfold nat_of_N at 1 in |- *.  unfold nat_of_P in |- *.
+  unfold Pmult_nat in |- *.  unfold plus in |- *.  apply leb_correct.
   apply nat_gt_1_lemma.  unfold not in |- *.  intro.  apply H.
-  replace ad_z with (ad_of_nat 0).  rewrite <- H1.  symmetry  in |- *.
-  apply ad_of_nat_of_ad.  reflexivity.  unfold not in |- *.  intro.  apply H0.
-  replace (ad_x 1) with (ad_of_nat 1).  rewrite <- H1.  symmetry  in |- *.
-  apply ad_of_nat_of_ad.  reflexivity.  
+  replace N0 with (N_of_nat 0).  rewrite <- H1.  symmetry  in |- *.
+  apply N_of_nat_of_N.  reflexivity.  unfold not in |- *.  intro.  apply H0.
+  replace (Npos 1) with (N_of_nat 1).  rewrite <- H1.  symmetry  in |- *.
+  apply N_of_nat_of_N.  reflexivity.  
 Qed.
 
-Lemma ad_lt_lemma :
- forall a b : ad, ad_le a b = false -> ad_le (ad_S b) a = true.
+Lemma Nlt_lemma :
+ forall a b : ad, Nle a b = false -> Nle (ad_S b) a = true.
 Proof.
-  intros.  unfold ad_le in |- *.  rewrite (ad_S_is_S b).  apply nat_le_correct.
-  fold (nat_of_ad b < nat_of_ad a) in |- *.  apply nat_le_complete_conv.
+  intros.  unfold Nle in |- *.  rewrite (ad_S_is_S b).  apply leb_correct.
+  fold (nat_of_N b < nat_of_N a) in |- *.  apply leb_complete_conv.
   assumption.
 Qed.
 
 Lemma eq_ad_S_eq :
- forall a b : ad, ad_eq (ad_S a) (ad_S b) = true -> ad_eq a b = true.
+ forall a b : ad, Neqb (ad_S a) (ad_S b) = true -> Neqb a b = true.
 Proof.
-  intros.  cut (ad_S a = ad_S b).  rewrite <- (ad_of_nat_of_ad (ad_S a)).
-  rewrite <- (ad_of_nat_of_ad (ad_S b)).  rewrite (ad_S_is_S a).
-  rewrite (ad_S_is_S b).  intro.  cut (nat_of_ad a = nat_of_ad b).  intro.
-  rewrite <- (ad_of_nat_of_ad a).  rewrite <- (ad_of_nat_of_ad b).  rewrite H1.
-  apply ad_eq_correct.  apply eq_add_S.
-  rewrite <- (nat_of_ad_of_nat (S (nat_of_ad a))).  rewrite H0.
-  apply nat_of_ad_of_nat.  apply ad_eq_complete.  assumption.
+  intros.  cut (ad_S a = ad_S b).  rewrite <- (N_of_nat_of_N (ad_S a)).
+  rewrite <- (N_of_nat_of_N (ad_S b)).  rewrite (ad_S_is_S a).
+  rewrite (ad_S_is_S b).  intro.  cut (nat_of_N a = nat_of_N b).  intro.
+  rewrite <- (N_of_nat_of_N a).  rewrite <- (N_of_nat_of_N b).  rewrite H1.
+  apply Neqb_correct.  apply eq_add_S.
+  rewrite <- (nat_of_N_of_nat (S (nat_of_N a))).  rewrite H0.
+  apply nat_of_N_of_nat.  apply Neqb_complete.  assumption.
 Qed.
 
-Lemma ad_S_neq_ad_z : forall a : ad, ad_eq (ad_S a) ad_z = false.
+Lemma ad_S_neq_N0 : forall a : ad, Neqb (ad_S a) N0 = false.
 Proof.
   intros.  elim a.  reflexivity.  simpl in |- *.  reflexivity.
 Qed.

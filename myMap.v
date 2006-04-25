@@ -17,7 +17,7 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
+Require Import ZArith NArith Nnat Ndec Ndigits.
 Require Import Map.
 Require Import Allmaps.
 Require Import Relation_Definitions.
@@ -83,11 +83,11 @@ Proof.
               (fold_right (F A f) neutral
                  (MapFold1 A (alist A) (anil A) (aapp A)
                     (fun (a : ad) (y : A) => acons A (a, y) (anil A))
-                    (fun a0 : ad => pf (ad_double a0)) m0))
+                    (fun a0 : ad => pf (Ndouble a0)) m0))
               (fold_right (F A f) neutral
                  (MapFold1 A (alist A) (anil A) (aapp A)
                     (fun (a : ad) (y : A) => acons A (a, y) (anil A))
-                    (fun a0 : ad => pf (ad_double_plus_un a0)) m1))).
+                    (fun a0 : ad => pf (Ndouble_plus_one a0)) m1))).
   apply op_eq.  apply H.  apply H0.  apply (proj2 (proj2 eq_R)).
   apply my_fold_right_aapp.
 Qed.
@@ -167,13 +167,13 @@ Qed.
 
 Lemma my_alist_of_map_lemma_1 :
  forall (A : Set) (m : Map A) (a : ad) (y : A),
- MapGet _ m a = SOME _ y -> In (a, y) (alist_of_Map _ m).
+ MapGet _ m a = Some y -> In (a, y) (alist_of_Map _ m).
 Proof.
   intros A m a y.  rewrite (alist_of_Map_semantics _ m a).
   generalize (alist_of_Map A m).  simple induction a0.  simpl in |- *.  intro; discriminate.
-  simpl in |- *.  intro a1.  elim a1.  intros a2 b l H H0.  elim (sumbool_of_bool (ad_eq a2 a)).
+  simpl in |- *.  intro a1.  elim a1.  intros a2 b l H H0.  elim (sumbool_of_bool (Neqb a2 a)).
   intro H1.  left.  rewrite H1 in H0.  injection H0; intro H2.  rewrite H2.
-  rewrite (ad_eq_complete _ _ H1).  reflexivity.  intro H1.  rewrite H1 in H0.
+  rewrite (Neqb_complete _ _ H1).  reflexivity.  intro H1.  rewrite H1 in H0.
   right.  apply H.  assumption.
 Qed.
 
@@ -184,63 +184,63 @@ Lemma my_alist_of_map_lemma_2 :
  In (a, y)
    (MapFold1 _ _ (anil _) (aapp _)
       (fun (a : ad) (y : A) => acons _ (a, y) (anil _)) pf m) ->
- MapGet _ m (fp a) = SOME _ y /\ pf (fp a) = a.
+ MapGet _ m (fp a) = Some y /\ pf (fp a) = a.
 Proof.
   simple induction m.  simpl in |- *.  tauto.  simpl in |- *.  intros a a0 pf fp H a1 y H0.  elim H0.  intro H1.
-  injection H1; intros H2 H3.  rewrite <- H3.  rewrite (H a).  rewrite (ad_eq_correct a).
+  injection H1; intros H2 H3.  rewrite <- H3.  rewrite (H a).  rewrite (Neqb_correct a).
   rewrite H2.  split; reflexivity.  tauto.  intros m0 H m1 H0 pf fp H1 a y H2.  simpl in H2.  unfold aapp in H2.
   elim
    (in_app_or
       (MapFold1 A (list (ad * A)) (anil A) (app (A:=ad * A))
          (fun (a0 : ad) (y0 : A) => acons A (a0, y0) (anil A))
-         (fun a0 : ad => pf (ad_double a0)) m0)
+         (fun a0 : ad => pf (Ndouble a0)) m0)
       (MapFold1 A (list (ad * A)) (anil A) (app (A:=ad * A))
          (fun (a0 : ad) (y0 : A) => acons A (a0, y0) (anil A))
-         (fun a0 : ad => pf (ad_double_plus_un a0)) m1) 
+         (fun a0 : ad => pf (Ndouble_plus_one a0)) m1) 
       (a, y) H2).
   intro H3.  fold (aapp A) in H3.  rewrite (MapGet_M2_bit_0_if A m0 m1 (fp a)).
   cut
    (forall a : ad,
-    (fun a0 : ad => ad_div_2 (fp a0)) ((fun a0 : ad => pf (ad_double a0)) a) =
+    (fun a0 : ad => Ndiv2 (fp a0)) ((fun a0 : ad => pf (Ndouble a0)) a) =
     a).
   intro H4.  elim
-   (H (fun a0 : ad => pf (ad_double a0)) (fun a0 : ad => ad_div_2 (fp a0)) H4
+   (H (fun a0 : ad => pf (Ndouble a0)) (fun a0 : ad => Ndiv2 (fp a0)) H4
       a y H3).
-  intros H5 H6.  elim (sumbool_of_bool (ad_bit_0 (fp a))).  intro H7.
-  cut (ad_eq (ad_double (ad_div_2 (fp a))) (fp a) = false).  intro H8.
-  cut (fp (pf (ad_double (ad_div_2 (fp a)))) = fp a).  rewrite (H1 (ad_double (ad_div_2 (fp a)))).
-  intro H9.  rewrite H9 in H8.  rewrite (ad_eq_correct (fp a)) in H8.  discriminate.
-  rewrite H6.  reflexivity.  apply ad_bit_0_1_not_double.  assumption.  intro H7.
+  intros H5 H6.  elim (sumbool_of_bool (Nbit0 (fp a))).  intro H7.
+  cut (Neqb (Ndouble (Ndiv2 (fp a))) (fp a) = false).  intro H8.
+  cut (fp (pf (Ndouble (Ndiv2 (fp a)))) = fp a).  rewrite (H1 (Ndouble (Ndiv2 (fp a)))).
+  intro H9.  rewrite H9 in H8.  rewrite (Neqb_correct (fp a)) in H8.  discriminate.
+  rewrite H6.  reflexivity.  apply Nodd_not_double.  assumption.  intro H7.
   rewrite H7.  cut
-   (MapGet A m0 ((fun a0 : ad => ad_div_2 (fp a0)) a) = SOME A y /\
-    (fun a0 : ad => pf (ad_double a0)) ((fun a0 : ad => ad_div_2 (fp a0)) a) =
+   (MapGet A m0 ((fun a0 : ad => Ndiv2 (fp a0)) a) = Some y /\
+    (fun a0 : ad => pf (Ndouble a0)) ((fun a0 : ad => Ndiv2 (fp a0)) a) =
     a).
-  intro H8.  split.  exact (proj1 H8).  replace (fp a) with (fp (pf (ad_double (ad_div_2 (fp a))))).
-  rewrite (H1 (ad_double (ad_div_2 (fp a)))).  assumption.  rewrite (proj2 H8).
+  intro H8.  split.  exact (proj1 H8).  replace (fp a) with (fp (pf (Ndouble (Ndiv2 (fp a))))).
+  rewrite (H1 (Ndouble (Ndiv2 (fp a)))).  assumption.  rewrite (proj2 H8).
   reflexivity.  exact
-   (H (fun a0 : ad => pf (ad_double a0)) (fun a0 : ad => ad_div_2 (fp a0)) H4
+   (H (fun a0 : ad => pf (Ndouble a0)) (fun a0 : ad => Ndiv2 (fp a0)) H4
       a y H3).
-  intro a0.  rewrite (H1 (ad_double a0)).  apply ad_double_div_2.  intro H3.
+  intro a0.  rewrite (H1 (Ndouble a0)).  apply Ndouble_div2.  intro H3.
   fold (aapp A) in H3.  rewrite (MapGet_M2_bit_0_if A m0 m1 (fp a)).
   cut
    (forall a : ad,
-    (fun a0 : ad => ad_div_2 (fp a0))
-      ((fun a0 : ad => pf (ad_double_plus_un a0)) a) = a).
+    (fun a0 : ad => Ndiv2 (fp a0))
+      ((fun a0 : ad => pf (Ndouble_plus_one a0)) a) = a).
   intro H4.  elim
-   (H0 (fun a0 : ad => pf (ad_double_plus_un a0))
-      (fun a0 : ad => ad_div_2 (fp a0)) H4 a y H3).
-  intros H5 H6.  elim (sumbool_of_bool (ad_bit_0 (fp a))).  intro H7.  rewrite H7.
-  split.  assumption.  rewrite (ad_div_2_double_plus_un (fp a) H7) in H6.
-  assumption.  intro H7.  cut (ad_eq (ad_double_plus_un (ad_div_2 (fp a))) (fp a) = false).
-  cut (fp (pf (ad_double_plus_un (ad_div_2 (fp a)))) = fp a).  rewrite (H1 (ad_double_plus_un (ad_div_2 (fp a)))).
-  intros H8 H9.  rewrite H8 in H9.  rewrite (ad_eq_correct (fp a)) in H9.  discriminate.
-  rewrite H6.  reflexivity.  apply ad_bit_0_0_not_double_plus_un.  assumption.
-  intro a0.  rewrite (H1 (ad_double_plus_un a0)).  apply ad_double_plus_un_div_2.
+   (H0 (fun a0 : ad => pf (Ndouble_plus_one a0))
+      (fun a0 : ad => Ndiv2 (fp a0)) H4 a y H3).
+  intros H5 H6.  elim (sumbool_of_bool (Nbit0 (fp a))).  intro H7.  rewrite H7.
+  split.  assumption.  rewrite (Ndiv2_double_plus_one (fp a) H7) in H6.
+  assumption.  intro H7.  cut (Neqb (Ndouble_plus_one (Ndiv2 (fp a))) (fp a) = false).
+  cut (fp (pf (Ndouble_plus_one (Ndiv2 (fp a)))) = fp a).  rewrite (H1 (Ndouble_plus_one (Ndiv2 (fp a)))).
+  intros H8 H9.  rewrite H8 in H9.  rewrite (Neqb_correct (fp a)) in H9.  discriminate.
+  rewrite H6.  reflexivity.  apply Neven_not_double_plus_one.  assumption.
+  intro a0.  rewrite (H1 (Ndouble_plus_one a0)).  apply Ndouble_plus_one_div2.
 Qed.
 
 Lemma my_alist_of_map_lemma_3 :
  forall (A : Set) (m : Map A) (a : ad) (y : A),
- In (a, y) (alist_of_Map _ m) -> MapGet _ m a = SOME _ y.
+ In (a, y) (alist_of_Map _ m) -> MapGet _ m a = Some y.
 Proof.
   unfold alist_of_Map in |- *.  unfold MapFold in |- *.  intros.  cut (forall a : ad, (fun a0 : ad => a0) ((fun a0 : ad => a0) a) = a).
   intro.  elim
@@ -259,8 +259,8 @@ Definition no_dup_alist (A : Set) (l : alist A) :=
 Lemma no_dup_alist_of_Map :
  forall (A : Set) (m : Map A), no_dup_alist _ (alist_of_Map _ m).
 Proof.
-  unfold no_dup_alist in |- *.  intros.  cut (MapGet _ m a = SOME _ y1).  intros.
-  cut (MapGet _ m a = SOME _ y2).  intros.  rewrite H1 in H2.
+  unfold no_dup_alist in |- *.  intros.  cut (MapGet _ m a = Some y1).  intros.
+  cut (MapGet _ m a = Some y2).  intros.  rewrite H1 in H2.
   injection H2; intros; assumption.  apply my_alist_of_map_lemma_3.
   assumption.  apply my_alist_of_map_lemma_3.  assumption.  
 Qed.
@@ -274,9 +274,9 @@ Lemma my_fold_right_lemma :
    (fold_right
       (fun (r : ad * A) (m0 : Map B) =>
        let (a0, y0) := r in MapMerge B (f a0 y0) m0) 
-      (M0 B) l) a = SOME _ y <->
+      (M0 B) l) a = Some y <->
  (exists a1 : ad,
-    (exists y1 : A, In (a1, y1) l /\ MapGet _ (f a1 y1) a = SOME _ y)).
+    (exists y1 : A, In (a1, y1) l /\ MapGet _ (f a1 y1) a = Some y)).
 Proof.
   simple induction l.  simpl in |- *.  split.  intro; discriminate.  intro H1.  inversion H1.
   inversion H2.  elim H3; tauto.  intro a.  elim a.  clear a; intros a y.
@@ -333,7 +333,7 @@ Proof.
       (fold_right
          (fun (r : ad * A) (m0 : Map B) =>
           let (a1, y1) := r in MapMerge B (f a1 y1) m0) 
-         (M0 B) l0) a0 = SOME B y0).
+         (M0 B) l0) a0 = Some y0).
   intro H6.  rewrite H6.  reflexivity.  apply (proj2 (H H0 H2 a0 y0)).
   split with a1.  split with y1.  split; assumption.  unfold no_dup_alist in |- *.
   intros a1 y1 y2 H2 H3.  unfold no_dup_alist in H1.  refine (H1 a1 y1 y2 _ _).  apply in_cons.
@@ -346,10 +346,10 @@ Lemma myMapFold_lemma :
  forall (A B : Set) (f : ad -> A -> Map B) (m : Map A),
  f_OK _ _ f ->
  forall (a : ad) (y : B),
- MapGet _ (MapFold _ _ (M0 _) (MapMerge _) f m) a = SOME _ y <->
+ MapGet _ (MapFold _ _ (M0 _) (MapMerge _) f m) a = Some y <->
  (exists a1 : ad,
     (exists y1 : A,
-       MapGet _ m a1 = SOME _ y1 /\ MapGet _ (f a1 y1) a = SOME _ y)).
+       MapGet _ m a1 = Some y1 /\ MapGet _ (f a1 y1) a = Some y)).
 Proof.
   intros.  rewrite (myMapFold_as_fold_2 _ _ f m a).  cut (no_dup_alist _ (alist_of_Map _ m)).
   intro.  split.  intro.  elim (proj1 (my_fold_right_lemma _ _ f (alist_of_Map _ m) H H0 a y)).
@@ -376,44 +376,44 @@ Fixpoint Mapn (n : nat) : Set :=
       
 Definition MapGet2 (m : Map (Map A)) (a b : ad) :=
   match MapGet _ m a with
-  | NONE => NONE A
-  | SOME m' => MapGet _ m' b
+  | None => None 
+  | Some m' => MapGet _ m' b
   end.
 
 Definition MapGet3 (m : Map (Map (Map A))) (a b c : ad) :=
   match MapGet _ m a with
-  | NONE => NONE A
-  | SOME m' => MapGet2 m' b c
+  | None => None
+  | Some m' => MapGet2 m' b c
   end.
 
 Definition MapPut2 (m : Map (Map A)) (a b : ad) (c : A) :=
   match MapGet _ m a with
-  | SOME m' => MapPut _ m a (MapPut _ m' b c)
-  | NONE => MapPut _ m a (M1 _ b c)
+  | Some m' => MapPut _ m a (MapPut _ m' b c)
+  | None => MapPut _ m a (M1 _ b c)
   end.
 
 Definition MapPut3 (m : Map (Map (Map A))) (a b c : ad) 
   (d : A) :=
   match MapGet _ m a with
-  | SOME m' => MapPut _ m a (MapPut2 m' b c d)
-  | NONE => MapPut _ m a (M1 _ b (M1 _ c d))
+  | Some m' => MapPut _ m a (MapPut2 m' b c d)
+  | None => MapPut _ m a (M1 _ b (M1 _ c d))
   end.
 
 Lemma MapPut2_semantics :
  forall (m : Map (Map A)) (a b a1 b1 : ad) (c : A),
  MapGet2 (MapPut2 m a b c) a1 b1 =
- (if ad_eq a a1 && ad_eq b b1 then SOME _ c else MapGet2 m a1 b1).
+ (if Neqb a a1 && Neqb b b1 then Some c else MapGet2 m a1 b1).
 Proof.
   intros m a b a1 b1 c.  unfold MapGet2, MapPut2 in |- *.  elim (option_sum _ (MapGet (Map A) m a)).
   intro H.  elim H; clear H; intros x H.  rewrite H.
   rewrite (MapPut_semantics (Map A) m a (MapPut A x b c) a1).
-  elim (sumbool_of_bool (ad_eq a a1)).  intro H0.  rewrite H0.  simpl in |- *.
-  rewrite (MapPut_semantics A x b c b1).  rewrite <- (ad_eq_complete a a1).
+  elim (sumbool_of_bool (Neqb a a1)).  intro H0.  rewrite H0.  simpl in |- *.
+  rewrite (MapPut_semantics A x b c b1).  rewrite <- (Neqb_complete a a1).
   rewrite H.  reflexivity.  assumption.  intro H0.  rewrite H0.  simpl in |- *.
-  reflexivity.  intro H.  rewrite H.  simpl in |- *.  elim (sumbool_of_bool (ad_eq a a1)).
+  reflexivity.  intro H.  rewrite H.  simpl in |- *.  elim (sumbool_of_bool (Neqb a a1)).
   intro H0.  rewrite H0.  simpl in |- *.
   rewrite (MapPut_semantics (Map A) m a (M1 A b c) a1).  rewrite H0.  simpl in |- *.
-  rewrite <- (ad_eq_complete _ _ H0).  rewrite H.  reflexivity.  intro H0.
+  rewrite <- (Neqb_complete _ _ H0).  rewrite H.  reflexivity.  intro H0.
   rewrite H0.  simpl in |- *.  rewrite (MapPut_semantics (Map A) m a (M1 A b c) a1).
   rewrite H0.  reflexivity.
 Qed.
@@ -421,21 +421,21 @@ Qed.
 Lemma MapPut3_semantics :
  forall (m : Map (Map (Map A))) (a b c a1 b1 c1 : ad) (d : A),
  MapGet3 (MapPut3 m a b c d) a1 b1 c1 =
- (if ad_eq a a1 && (ad_eq b b1 && ad_eq c c1)
-  then SOME _ d
+ (if Neqb a a1 && (Neqb b b1 && Neqb c c1)
+  then Some d
   else MapGet3 m a1 b1 c1).
 Proof.
   intros m a b c a1 b1 c1 d.  unfold MapGet3, MapPut3 in |- *.
   elim (option_sum _ (MapGet (Map (Map A)) m a)).  intro H.
   elim H; clear H; intros x H.  rewrite H.
   rewrite (MapPut_semantics (Map (Map A)) m a (MapPut2 x b c d) a1).
-  elim (sumbool_of_bool (ad_eq a a1)).  intro H0.  rewrite H0.  simpl in |- *.
-  rewrite <- (ad_eq_complete _ _ H0).  rewrite (MapPut2_semantics x b c b1 c1 d).
+  elim (sumbool_of_bool (Neqb a a1)).  intro H0.  rewrite H0.  simpl in |- *.
+  rewrite <- (Neqb_complete _ _ H0).  rewrite (MapPut2_semantics x b c b1 c1 d).
   rewrite H.  reflexivity.  intro H0.  rewrite H0.  simpl in |- *.  reflexivity.  intro H.
   rewrite H.  rewrite (MapPut_semantics (Map (Map A)) m a (M1 (Map A) b (M1 A c d)) a1).
-  elim (sumbool_of_bool (ad_eq a a1)).  intro H0.  rewrite H0.  simpl in |- *.
-  unfold MapGet2 in |- *.  simpl in |- *.  rewrite <- (ad_eq_complete _ _ H0).  rewrite H.
-  elim (ad_eq b b1).  simpl in |- *.  reflexivity.  simpl in |- *.  reflexivity.  intro H0.
+  elim (sumbool_of_bool (Neqb a a1)).  intro H0.  rewrite H0.  simpl in |- *.
+  unfold MapGet2 in |- *.  simpl in |- *.  rewrite <- (Neqb_complete _ _ H0).  rewrite H.
+  elim (Neqb b b1).  simpl in |- *.  reflexivity.  simpl in |- *.  reflexivity.  intro H0.
   rewrite H0.  simpl in |- *.  reflexivity.
 Qed.
 
@@ -454,7 +454,7 @@ Fixpoint MapDomRestrTo_DomBy (m : Map A) : Map B -> Map A * Map unit :=
   | M1 a y =>
       fun m' : Map B =>
       match MapGet B m' a with
-      | NONE => (M0 A, M1 unit a tt)
+      | None => (M0 A, M1 unit a tt)
       | _ => (m, M0 unit)
       end
   | M2 m1 m2 =>
@@ -463,8 +463,8 @@ Fixpoint MapDomRestrTo_DomBy (m : Map A) : Map B -> Map A * Map unit :=
       | M0 => (M0 A, MapDom A m)
       | M1 a' y' =>
           (match MapGet A m a' with
-           | NONE => M0 A
-           | SOME y => M1 A a' y
+           | None => M0 A
+           | Some y => M1 A a' y
            end, MapDom A (MapRemove A m a'))
       | M2 m'1 m'2 =>
           match MapDomRestrTo_DomBy m1 m'1 with
@@ -507,8 +507,8 @@ Fixpoint map_app_list1 (pf : ad -> ad) (l : list ad)
   | M0 => l
   | M1 a y => pf a :: l
   | M2 m1 m2 =>
-      map_app_list1 (fun a0 : ad => pf (ad_double_plus_un a0))
-        (map_app_list1 (fun a0 : ad => pf (ad_double a0)) l m1) m2
+      map_app_list1 (fun a0 : ad => pf (Ndouble_plus_one a0))
+        (map_app_list1 (fun a0 : ad => pf (Ndouble a0)) l m1) m2
   end.
 
 Lemma map_app_list1_lemma_1 :
@@ -528,34 +528,34 @@ Lemma map_app_list1_lemma_2 :
 Proof.
   simple induction m.  simpl in |- *.  intros pf fp l H a H0.  left; assumption.  simpl in |- *.  intros a a0 pf fp l H a1 H0.
   elim H0; intro H2.  rewrite <- H2.  rewrite (H a).  right.  unfold in_dom in |- *.
-  simpl in |- *.  rewrite (ad_eq_correct a).  split; reflexivity.  left; assumption.
+  simpl in |- *.  rewrite (Neqb_correct a).  split; reflexivity.  left; assumption.
   simpl in |- *.  intros m0 H m1 H0 pf fp l H1 a H2.  cut
    (forall a : ad,
-    (fun a0 : ad => ad_div_2 (fp a0))
-      ((fun a0 : ad => pf (ad_double_plus_un a0)) a) = a).
+    (fun a0 : ad => Ndiv2 (fp a0))
+      ((fun a0 : ad => pf (Ndouble_plus_one a0)) a) = a).
   intro H3.  elim
-   (H0 (fun a0 : ad => pf (ad_double_plus_un a0))
-      (fun a0 : ad => ad_div_2 (fp a0)) _ H3 a H2).
+   (H0 (fun a0 : ad => pf (Ndouble_plus_one a0))
+      (fun a0 : ad => Ndiv2 (fp a0)) _ H3 a H2).
   intro H4.  cut
    (forall a : ad,
-    (fun a0 : ad => ad_div_2 (fp a0)) ((fun a0 : ad => pf (ad_double a0)) a) =
+    (fun a0 : ad => Ndiv2 (fp a0)) ((fun a0 : ad => pf (Ndouble a0)) a) =
     a).
   intro H5.  elim
-   (H (fun a0 : ad => pf (ad_double a0)) (fun a0 : ad => ad_div_2 (fp a0)) _
+   (H (fun a0 : ad => pf (Ndouble a0)) (fun a0 : ad => Ndiv2 (fp a0)) _
       H5 a H4).
   tauto.  intro H6.  elim H6; clear H6; intros H6 H7.  right.
-  elim (sumbool_of_bool (ad_bit_0 (fp a))).  intro y.  rewrite <- H7 in y.
-  rewrite (H1 (ad_double (ad_div_2 (fp a)))) in y.  rewrite (ad_double_bit_0 (ad_div_2 (fp a))) in y.
+  elim (sumbool_of_bool (Nbit0 (fp a))).  intro y.  rewrite <- H7 in y.
+  rewrite (H1 (Ndouble (Ndiv2 (fp a)))) in y.  rewrite (Ndouble_bit0 (Ndiv2 (fp a))) in y.
   discriminate.  intro y.  unfold in_dom in |- *.  rewrite (MapGet_M2_bit_0_0 _ (fp a) y m0 m1).
-  unfold in_dom in H6.  split.  assumption.  rewrite (ad_div_2_double (fp a) y) in H7.
-  assumption.  intro a0.  rewrite (H1 (ad_double a0)).  apply ad_double_div_2.
+  unfold in_dom in H6.  split.  assumption.  rewrite (Ndiv2_double (fp a) y) in H7.
+  assumption.  intro a0.  rewrite (H1 (Ndouble a0)).  apply Ndouble_div2.
   intro H4.  elim H4; clear H4; intros H4 H5.  right.
-  elim (sumbool_of_bool (ad_bit_0 (fp a))).  intro y.  unfold in_dom in |- *.
+  elim (sumbool_of_bool (Nbit0 (fp a))).  intro y.  unfold in_dom in |- *.
   rewrite (MapGet_M2_bit_0_1 _ (fp a) y m0 m1).  unfold in_dom in H4.  split.
-  assumption.  rewrite (ad_div_2_double_plus_un _ y) in H5.  assumption.  intro y.
-  rewrite <- H5 in y.  rewrite (H1 (ad_double_plus_un (ad_div_2 (fp a)))) in y.
-  rewrite (ad_double_plus_un_bit_0 (ad_div_2 (fp a))) in y.  discriminate.
-  intro a0.  rewrite (H1 (ad_double_plus_un a0)).  apply ad_double_plus_un_div_2.
+  assumption.  rewrite (Ndiv2_double_plus_one _ y) in H5.  assumption.  intro y.
+  rewrite <- H5 in y.  rewrite (H1 (Ndouble_plus_one (Ndiv2 (fp a)))) in y.
+  rewrite (Ndouble_plus_one_bit0 (Ndiv2 (fp a))) in y.  discriminate.
+  intro a0.  rewrite (H1 (Ndouble_plus_one a0)).  apply Ndouble_plus_one_div2.
 Qed.
 
 Lemma map_app_list1_lemma_3 :
@@ -567,31 +567,31 @@ Lemma map_app_list1_lemma_3 :
 Proof.
   simple induction m.  simpl in |- *.  tauto.  simpl in |- *.  intros a a0 pf fp l H H0 H1.  apply no_dup_cons.  unfold not in |- *.
   intro H2.  absurd (In (pf a) l).  apply H1 with (a1 := a).  unfold in_dom in |- *.  simpl in |- *.
-  rewrite (ad_eq_correct a).  reflexivity.  assumption.  assumption.  simpl in |- *.
-  intros m0 H m1 H0 pf fp l H1 H2 H3.  apply H0 with (fp := fun a0 : ad => ad_div_2 (fp a0)).  intro a0.
-  rewrite (H1 (ad_double_plus_un a0)).  apply ad_double_plus_un_div_2.
-  apply H with (fp := fun a0 : ad => ad_div_2 (fp a0)).  intro a0.  rewrite (H1 (ad_double a0)).
-  apply ad_double_div_2.  assumption.  intros a H4.  apply H3.  unfold in_dom in |- *.
-  rewrite (MapGet_M2_bit_0_0 _ (ad_double a) (ad_double_bit_0 _) m0 m1).
-  rewrite (ad_double_div_2 a).  assumption.  intros a H4.  unfold not in |- *; intro H5.
+  rewrite (Neqb_correct a).  reflexivity.  assumption.  assumption.  simpl in |- *.
+  intros m0 H m1 H0 pf fp l H1 H2 H3.  apply H0 with (fp := fun a0 : ad => Ndiv2 (fp a0)).  intro a0.
+  rewrite (H1 (Ndouble_plus_one a0)).  apply Ndouble_plus_one_div2.
+  apply H with (fp := fun a0 : ad => Ndiv2 (fp a0)).  intro a0.  rewrite (H1 (Ndouble a0)).
+  apply Ndouble_div2.  assumption.  intros a H4.  apply H3.  unfold in_dom in |- *.
+  rewrite (MapGet_M2_bit_0_0 _ (Ndouble a) (Ndouble_bit0 _) m0 m1).
+  rewrite (Ndouble_div2 a).  assumption.  intros a H4.  unfold not in |- *; intro H5.
   cut
    (forall a : ad,
-    (fun a0 : ad => ad_div_2 (fp a0)) ((fun a0 : ad => pf (ad_double a0)) a) =
+    (fun a0 : ad => Ndiv2 (fp a0)) ((fun a0 : ad => pf (Ndouble a0)) a) =
     a).
   intro H6.  elim
-   (map_app_list1_lemma_2 m0 (fun a0 : ad => pf (ad_double a0))
-      (fun a0 : ad => ad_div_2 (fp a0)) l H6 _ H5).
-  unfold not in H3.  intro H7.  apply H3 with (a := ad_double_plus_un a).
+   (map_app_list1_lemma_2 m0 (fun a0 : ad => pf (Ndouble a0))
+      (fun a0 : ad => Ndiv2 (fp a0)) l H6 _ H5).
+  unfold not in H3.  intro H7.  apply H3 with (a := Ndouble_plus_one a).
   unfold in_dom in |- *.  rewrite
-   (MapGet_M2_bit_0_1 _ (ad_double_plus_un a) (ad_double_plus_un_bit_0 _) m0
+   (MapGet_M2_bit_0_1 _ (Ndouble_plus_one a) (Ndouble_plus_one_bit0 _) m0
       m1).
-  rewrite (ad_double_plus_un_div_2 a).  assumption.  assumption.  intro H7.
-  elim H7; clear H7; intros H7 H8.  rewrite (H1 (ad_double_plus_un a)) in H8.
-  rewrite (ad_double_plus_un_div_2 a) in H8.  elim (sumbool_of_bool (ad_bit_0 (ad_double a))).
-  intro y.  rewrite (ad_double_bit_0 a) in y.  discriminate.  intro y.
-  rewrite <- (H1 (ad_double a)) in y.  rewrite H8 in y.
-  rewrite (H1 (ad_double_plus_un a)) in y.  rewrite (ad_double_plus_un_bit_0 a) in y.
-  discriminate.  intro a0.  rewrite (H1 (ad_double a0)).  apply ad_double_div_2.
+  rewrite (Ndouble_plus_one_div2 a).  assumption.  assumption.  intro H7.
+  elim H7; clear H7; intros H7 H8.  rewrite (H1 (Ndouble_plus_one a)) in H8.
+  rewrite (Ndouble_plus_one_div2 a) in H8.  elim (sumbool_of_bool (Nbit0 (Ndouble a))).
+  intro y.  rewrite (Ndouble_bit0 a) in y.  discriminate.  intro y.
+  rewrite <- (H1 (Ndouble a)) in y.  rewrite H8 in y.
+  rewrite (H1 (Ndouble_plus_one a)) in y.  rewrite (Ndouble_plus_one_bit0 a) in y.
+  discriminate.  intro a0.  rewrite (H1 (Ndouble a0)).  apply Ndouble_div2.
 Qed.
 
 Lemma map_app_list1_lemma_4 :
@@ -599,19 +599,19 @@ Lemma map_app_list1_lemma_4 :
  in_dom _ a m = true -> In (pf a) (map_app_list1 pf l m).
 Proof.
   simple induction m.  simpl in |- *.  unfold in_dom in |- *.  simpl in |- *.  intros; discriminate.  simpl in |- *.
-  intros.  unfold in_dom in H.  simpl in H.  elim (sumbool_of_bool (ad_eq a a1)).
-  intro y.  rewrite y in H.  rewrite (ad_eq_complete _ _ y).  left.  reflexivity.
+  intros.  unfold in_dom in H.  simpl in H.  elim (sumbool_of_bool (Neqb a a1)).
+  intro y.  rewrite y in H.  rewrite (Neqb_complete _ _ y).  left.  reflexivity.
   intro y.  rewrite y in H.  discriminate.  simpl in |- *.  intros.
-  elim (sumbool_of_bool (ad_bit_0 a)).  intro y.  unfold in_dom in H1.
+  elim (sumbool_of_bool (Nbit0 a)).  intro y.  unfold in_dom in H1.
   rewrite (MapGet_M2_bit_0_1 _ a y m0 m1) in H1.
   replace (pf a) with
-   ((fun a0 : ad => pf (ad_double_plus_un a0)) (ad_div_2 a)).
-  apply H0 with (pf := fun a0 : ad => pf (ad_double_plus_un a0)).  assumption.  
-  rewrite (ad_div_2_double_plus_un a).  reflexivity.  assumption.  intro y.
-  apply map_app_list1_lemma_1.  replace (pf a) with (pf (ad_double (ad_div_2 a))).
-  apply H with (pf := fun a0 : ad => pf (ad_double a0)).  unfold in_dom in |- *.
+   ((fun a0 : ad => pf (Ndouble_plus_one a0)) (Ndiv2 a)).
+  apply H0 with (pf := fun a0 : ad => pf (Ndouble_plus_one a0)).  assumption.  
+  rewrite (Ndiv2_double_plus_one a).  reflexivity.  assumption.  intro y.
+  apply map_app_list1_lemma_1.  replace (pf a) with (pf (Ndouble (Ndiv2 a))).
+  apply H with (pf := fun a0 : ad => pf (Ndouble a0)).  unfold in_dom in |- *.
   unfold in_dom in H1.  rewrite (MapGet_M2_bit_0_0 _ _ y m0 m1) in H1.
-  assumption.  rewrite (ad_div_2_double _ y).  reflexivity.  
+  assumption.  rewrite (Ndiv2_double _ y).  reflexivity.  
 Qed.
 
 Fixpoint MapDomRestrByApp1 (pf : ad -> ad) (l : list ad) 
@@ -621,7 +621,7 @@ Fixpoint MapDomRestrByApp1 (pf : ad -> ad) (l : list ad)
   | M1 a y =>
       fun m' : Map B =>
       match MapGet B m' a with
-      | NONE => pf a :: l
+      | None => pf a :: l
       | _ => l
       end
   | M2 m1 m2 =>
@@ -630,8 +630,8 @@ Fixpoint MapDomRestrByApp1 (pf : ad -> ad) (l : list ad)
       | M0 => map_app_list1 pf l m
       | M1 a' y' => map_app_list1 pf l (MapRemove A m a')
       | M2 m'1 m'2 =>
-          MapDomRestrByApp1 (fun a0 : ad => pf (ad_double_plus_un a0))
-            (MapDomRestrByApp1 (fun a0 : ad => pf (ad_double a0)) l m1 m'1)
+          MapDomRestrByApp1 (fun a0 : ad => pf (Ndouble_plus_one a0))
+            (MapDomRestrByApp1 (fun a0 : ad => pf (Ndouble a0)) l m1 m'1)
             m2 m'2
       end
   end.
@@ -641,6 +641,7 @@ Lemma MapDomRestrByApp1_lemma_1 :
  In a l -> In a (MapDomRestrByApp1 pf l m m').
 Proof.
   simple induction m.  simpl in |- *.  tauto.  simpl in |- *.  intros.  elim (MapGet B m' a).
+  Focus 2.
   apply in_cons.  assumption.  intro.  assumption.  intros.  elim m'.  simpl in |- *.
   apply map_app_list1_lemma_1.  apply map_app_list1_lemma_1.  assumption.
   unfold MapDomRestrByApp1 in |- *.  intros.  apply map_app_list1_lemma_1.
@@ -653,8 +654,8 @@ Lemma MapDomRestrByApp1_lemma_2 :
  in_dom _ a m' = false -> In (pf a) (MapDomRestrByApp1 pf l m m').
 Proof.
   simple induction m.  simpl in |- *.  unfold in_dom at 1 in |- *.  simpl in |- *.  intros.  discriminate.
-  unfold in_dom in |- *.  simpl in |- *.  intros.  elim (sumbool_of_bool (ad_eq a a1)).  intro y.
-  rewrite (ad_eq_complete _ _ y).  elim (option_sum _ (MapGet B m' a1)).  intro y0.
+  unfold in_dom in |- *.  simpl in |- *.  intros.  elim (sumbool_of_bool (Neqb a a1)).  intro y.
+  rewrite (Neqb_complete _ _ y).  elim (option_sum _ (MapGet B m' a1)).  intro y0.
   inversion y0.  rewrite H1 in H0.  rewrite y in H.  discriminate.  intro y0.
   rewrite y0.  simpl in |- *.  left.  reflexivity.  intro y.  rewrite y in H.
   discriminate.  intro.  simple induction m'.  unfold MapDomRestrByApp1 in |- *.
@@ -662,20 +663,20 @@ Proof.
   unfold MapDomRestrByApp1 in |- *.  unfold in_dom in H2.  simpl in H2.
   apply map_app_list1_lemma_4.  unfold in_dom in |- *.
   rewrite (MapRemove_semantics A (M2 A m0 m1) a a1).
-  elim (sumbool_of_bool (ad_eq a a1)).  intro y.  rewrite y in H2.  discriminate.
+  elim (sumbool_of_bool (Neqb a a1)).  intro y.  rewrite y in H2.  discriminate.
   intro y.  rewrite y.  assumption.  intros.  simpl in |- *.
-  elim (sumbool_of_bool (ad_bit_0 a)).  intro y.  unfold in_dom in H3, H4.
+  elim (sumbool_of_bool (Nbit0 a)).  intro y.  unfold in_dom in H3, H4.
   rewrite (MapGet_M2_bit_0_1 A a y m0 m1) in H3.
   rewrite (MapGet_M2_bit_0_1 B a y m2 m3) in H4.
-  replace (pf a) with (pf (ad_double_plus_un (ad_div_2 a))).
-  apply H0 with (pf := fun a0 : ad => pf (ad_double_plus_un a0)).  assumption.
-  assumption.  rewrite (ad_div_2_double_plus_un _ y).  reflexivity.  intro y.
+  replace (pf a) with (pf (Ndouble_plus_one (Ndiv2 a))).
+  apply H0 with (pf := fun a0 : ad => pf (Ndouble_plus_one a0)).  assumption.
+  assumption.  rewrite (Ndiv2_double_plus_one _ y).  reflexivity.  intro y.
   unfold in_dom in H3, H4.  rewrite (MapGet_M2_bit_0_0 A a y m0 m1) in H3.
   rewrite (MapGet_M2_bit_0_0 B a y m2 m3) in H4.
   apply MapDomRestrByApp1_lemma_1.
-  replace (pf a) with (pf (ad_double (ad_div_2 a))).
-  apply H with (pf := fun a0 : ad => pf (ad_double a0)).  assumption.  assumption.  
-  rewrite (ad_div_2_double _ y).  reflexivity.
+  replace (pf a) with (pf (Ndouble (Ndiv2 a))).
+  apply H with (pf := fun a0 : ad => pf (Ndouble a0)).  assumption.  assumption.  
+  rewrite (Ndiv2_double _ y).  reflexivity.
 Qed.
 
 Lemma MapDomRestrByApp1_lemma_3 :
@@ -690,7 +691,7 @@ Proof.
   elim (option_sum _ (MapGet B m' a)).  intro y.  elim y; clear y; intros x y.
   rewrite y in H0.  left.  assumption.  intro y.  rewrite y in H0.
   elim (in_inv H0).  intro H1.  right.  rewrite <- H1.  rewrite (H a).
-  unfold in_dom in |- *.  rewrite y.  simpl in |- *.  rewrite (ad_eq_correct a).  split.
+  unfold in_dom in |- *.  rewrite y.  simpl in |- *.  rewrite (Neqb_correct a).  split.
   reflexivity.  split.  reflexivity.  reflexivity.  tauto.  intro m0.
   simple induction m'.  intros.  unfold MapDomRestrByApp1 in H2.
   elim (map_app_list1_lemma_2 _ _ _ _ H1 a H2).  tauto.  intro H3.
@@ -699,39 +700,39 @@ Proof.
   elim (map_app_list1_lemma_2 _ _ _ _ H1 a1 H2).  tauto.  intro H3.
   elim H3; clear H3; intros.  right.  unfold in_dom in H3.
   rewrite (MapRemove_semantics A (M2 A m0 m1) a (fp a1)) in H3.
-  elim (sumbool_of_bool (ad_eq a (fp a1))).  intro y.  rewrite y in H3.
+  elim (sumbool_of_bool (Neqb a (fp a1))).  intro y.  rewrite y in H3.
   discriminate.  intro y.  rewrite y in H3.  split.  assumption.  split.
   unfold in_dom in |- *.  simpl in |- *.  rewrite y.  reflexivity.  assumption.  intros.
   simpl in H4.  cut
    (forall a : ad,
-    (fun a0 : ad => ad_div_2 (fp a0)) ((fun a0 : ad => pf (ad_double a0)) a) =
+    (fun a0 : ad => Ndiv2 (fp a0)) ((fun a0 : ad => pf (Ndouble a0)) a) =
     a).
   cut
    (forall a : ad,
-    (fun a0 : ad => ad_div_2 (fp a0))
-      ((fun a0 : ad => pf (ad_double_plus_un a0)) a) = a).
+    (fun a0 : ad => Ndiv2 (fp a0))
+      ((fun a0 : ad => pf (Ndouble_plus_one a0)) a) = a).
   intros.  elim
-   (H0 m3 _ (fun a0 : ad => pf (ad_double_plus_un a0))
-      (fun a0 : ad => ad_div_2 (fp a0)) H5 _ H4).
+   (H0 m3 _ (fun a0 : ad => pf (Ndouble_plus_one a0))
+      (fun a0 : ad => Ndiv2 (fp a0)) H5 _ H4).
   intro.  elim
-   (H m2 _ (fun a0 : ad => pf (ad_double a0))
-      (fun a0 : ad => ad_div_2 (fp a0)) H6 _ H7).
+   (H m2 _ (fun a0 : ad => pf (Ndouble a0))
+      (fun a0 : ad => Ndiv2 (fp a0)) H6 _ H7).
   tauto.  intro.  elim H8; clear H8; intros.  elim H9; clear H9; intros.
-  right.  elim (sumbool_of_bool (ad_bit_0 (fp a))).  intro y.
-  rewrite <- H10 in y.  rewrite (H3 (ad_double (ad_div_2 (fp a)))) in y.
-  rewrite (ad_double_bit_0 (ad_div_2 (fp a))) in y.  discriminate.  intro y.
+  right.  elim (sumbool_of_bool (Nbit0 (fp a))).  intro y.
+  rewrite <- H10 in y.  rewrite (H3 (Ndouble (Ndiv2 (fp a)))) in y.
+  rewrite (Ndouble_bit0 (Ndiv2 (fp a))) in y.  discriminate.  intro y.
   unfold in_dom in |- *.  rewrite (MapGet_M2_bit_0_0 _ _ y m0 m1).
   rewrite (MapGet_M2_bit_0_0 _ _ y m2 m3).  split.  assumption.  split.
-  assumption.  rewrite (ad_div_2_double _ y) in H10.  assumption.  intro.
+  assumption.  rewrite (Ndiv2_double _ y) in H10.  assumption.  intro.
   elim H7; clear H7; intros.  elim H8; clear H8; intros.  right.
-  elim (sumbool_of_bool (ad_bit_0 (fp a))).  intro y.  unfold in_dom in |- *.
+  elim (sumbool_of_bool (Nbit0 (fp a))).  intro y.  unfold in_dom in |- *.
   rewrite (MapGet_M2_bit_0_1 _ _ y m0 m1).  rewrite (MapGet_M2_bit_0_1 _ _ y m2 m3).
-  split.  assumption.  split.  assumption.  rewrite (ad_div_2_double_plus_un _ y) in H9.
+  split.  assumption.  split.  assumption.  rewrite (Ndiv2_double_plus_one _ y) in H9.
   assumption.  intro y.  rewrite <- H9 in y.
-  rewrite (H3 (ad_double_plus_un (ad_div_2 (fp a)))) in y.
-  rewrite (ad_double_plus_un_bit_0 (ad_div_2 (fp a))) in y.  discriminate.  
-  intros.  rewrite (H3 (ad_double_plus_un a0)).  apply ad_double_plus_un_div_2.
-  intros.  rewrite (H3 (ad_double a0)).  apply ad_double_div_2.
+  rewrite (H3 (Ndouble_plus_one (Ndiv2 (fp a)))) in y.
+  rewrite (Ndouble_plus_one_bit0 (Ndiv2 (fp a))) in y.  discriminate.  
+  intros.  rewrite (H3 (Ndouble_plus_one a0)).  apply Ndouble_plus_one_div2.
+  intros.  rewrite (H3 (Ndouble a0)).  apply Ndouble_div2.
 Qed.
 
 Lemma MapDomRestrByApp1_lemma_4 :
@@ -744,49 +745,49 @@ Proof.
   simple induction m.  simpl in |- *.  tauto.  intros.  unfold MapDomRestrByApp1 in |- *.
   elim (option_sum _ (MapGet _ m' a)).  intro y.  inversion y.  rewrite H2.
   assumption.  intro y.  rewrite y.  apply no_dup_cons.  apply H0.  unfold in_dom in |- *.
-  simpl in |- *.  rewrite (ad_eq_correct a).  reflexivity.  unfold in_dom in |- *.  rewrite y.
+  simpl in |- *.  rewrite (Neqb_correct a).  reflexivity.  unfold in_dom in |- *.  rewrite y.
   reflexivity.  assumption.  intro.  simple induction m'.  intros.
   unfold MapDomRestrByApp1 in |- *.  apply map_app_list1_lemma_3 with (fp := fp).
   assumption.  assumption.  intros.  apply H2.  assumption.  apply in_dom_M0.
   intros.  unfold MapDomRestrByApp1 in |- *.  apply map_app_list1_lemma_3 with (fp := fp).
   assumption.  assumption.  intros.  apply H2.  unfold in_dom in |- *.
   unfold in_dom in H4.  rewrite (MapRemove_semantics A (M2 A m0 m1) a a1) in H4.
-  elim (sumbool_of_bool (ad_eq a a1)).  intro y.  rewrite y in H4.  discriminate.
+  elim (sumbool_of_bool (Neqb a a1)).  intro y.  rewrite y in H4.  discriminate.
   intro y.  rewrite y in H4.  assumption.  unfold in_dom in H4.
   rewrite (MapRemove_semantics A (M2 A m0 m1) a a1) in H4.
-  elim (sumbool_of_bool (ad_eq a a1)).  intro y.  rewrite y in H4.  discriminate.
+  elim (sumbool_of_bool (Neqb a a1)).  intro y.  rewrite y in H4.  discriminate.
   intro y.  rewrite y in H4.  unfold in_dom in |- *.  simpl in |- *.  rewrite y.  reflexivity.
   intros.  simpl in |- *.  cut
    (forall a : ad,
-    (fun a0 : ad => ad_div_2 (fp a0)) ((fun a0 : ad => pf (ad_double a0)) a) =
+    (fun a0 : ad => Ndiv2 (fp a0)) ((fun a0 : ad => pf (Ndouble a0)) a) =
     a).
   cut
    (forall a : ad,
-    (fun a0 : ad => ad_div_2 (fp a0))
-      ((fun a0 : ad => pf (ad_double_plus_un a0)) a) = a).
-  intros.  apply H0 with (fp := fun a0 : ad => ad_div_2 (fp a0)).  intro.
-  rewrite (H3 (ad_double_plus_un a)).  apply ad_double_plus_un_div_2.  intros.
+    (fun a0 : ad => Ndiv2 (fp a0))
+      ((fun a0 : ad => pf (Ndouble_plus_one a0)) a) = a).
+  intros.  apply H0 with (fp := fun a0 : ad => Ndiv2 (fp a0)).  intro.
+  rewrite (H3 (Ndouble_plus_one a)).  apply Ndouble_plus_one_div2.  intros.
   unfold not in |- *.  intro.  elim
-   (MapDomRestrByApp1_lemma_3 m0 m2 l (fun a0 : ad => pf (ad_double a0))
-      (fun a0 : ad => ad_div_2 (fp a0)) H7 (pf (ad_double_plus_un a)) H10).
-  intro.  unfold not in H4.  apply H4 with (a := ad_double_plus_un a).
-  unfold in_dom in |- *.  rewrite (MapGet_M2_bit_0_1 _ _ (ad_double_plus_un_bit_0 a) m0 m1).
-  rewrite (ad_double_plus_un_div_2 a).  assumption.  unfold in_dom in |- *.
-  rewrite (MapGet_M2_bit_0_1 _ _ (ad_double_plus_un_bit_0 a) m2 m3).
-  rewrite (ad_double_plus_un_div_2 a).  assumption.  assumption.  intros.
+   (MapDomRestrByApp1_lemma_3 m0 m2 l (fun a0 : ad => pf (Ndouble a0))
+      (fun a0 : ad => Ndiv2 (fp a0)) H7 (pf (Ndouble_plus_one a)) H10).
+  intro.  unfold not in H4.  apply H4 with (a := Ndouble_plus_one a).
+  unfold in_dom in |- *.  rewrite (MapGet_M2_bit_0_1 _ _ (Ndouble_plus_one_bit0 a) m0 m1).
+  rewrite (Ndouble_plus_one_div2 a).  assumption.  unfold in_dom in |- *.
+  rewrite (MapGet_M2_bit_0_1 _ _ (Ndouble_plus_one_bit0 a) m2 m3).
+  rewrite (Ndouble_plus_one_div2 a).  assumption.  assumption.  intros.
   elim H11; clear H11; intros.  elim H12; clear H12; intros.
-  rewrite (H3 (ad_double_plus_un a)) in H13.  rewrite (ad_double_plus_un_div_2 a) in H13.
-  cut (ad_double a = ad_double_plus_un a).  intros.  elim (sumbool_of_bool (ad_bit_0 (ad_double a))).
-  intro y.  rewrite (ad_double_bit_0 a) in y.  discriminate.  rewrite H14.
-  rewrite (ad_double_plus_un_bit_0 a).  intro.  discriminate.  
-  rewrite <- (H3 (ad_double a)).  rewrite H13.  apply H3.  
-  apply H with (fp := fun a0 : ad => ad_div_2 (fp a0)).  assumption.  intros.  apply H4.
-  unfold in_dom in |- *.  rewrite (MapGet_M2_bit_0_0 _ _ (ad_double_bit_0 a) m0 m1).
-  rewrite (ad_double_div_2 a).  assumption.  unfold in_dom in |- *.
-  rewrite (MapGet_M2_bit_0_0 _ _ (ad_double_bit_0 a) m2 m3).  rewrite (ad_double_div_2 a).
-  assumption.  assumption.  intros.  rewrite (H3 (ad_double_plus_un a)).
-  apply ad_double_plus_un_div_2.  intro.  rewrite (H3 (ad_double a)).
-  apply ad_double_div_2.
+  rewrite (H3 (Ndouble_plus_one a)) in H13.  rewrite (Ndouble_plus_one_div2 a) in H13.
+  cut (Ndouble a = Ndouble_plus_one a).  intros.  elim (sumbool_of_bool (Nbit0 (Ndouble a))).
+  intro y.  rewrite (Ndouble_bit0 a) in y.  discriminate.  rewrite H14.
+  rewrite (Ndouble_plus_one_bit0 a).  intro.  discriminate.  
+  rewrite <- (H3 (Ndouble a)).  rewrite H13.  apply H3.  
+  apply H with (fp := fun a0 : ad => Ndiv2 (fp a0)).  assumption.  intros.  apply H4.
+  unfold in_dom in |- *.  rewrite (MapGet_M2_bit_0_0 _ _ (Ndouble_bit0 a) m0 m1).
+  rewrite (Ndouble_div2 a).  assumption.  unfold in_dom in |- *.
+  rewrite (MapGet_M2_bit_0_0 _ _ (Ndouble_bit0 a) m2 m3).  rewrite (Ndouble_div2 a).
+  assumption.  assumption.  intros.  rewrite (H3 (Ndouble_plus_one a)).
+  apply Ndouble_plus_one_div2.  intro.  rewrite (H3 (Ndouble a)).
+  apply Ndouble_div2.
 Qed.
 
 End My_Map.

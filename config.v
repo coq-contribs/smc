@@ -17,7 +17,7 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
+Require Import ZArith NArith Nnat Ndec Ndigits.
 Require Import Map.
 Require Import Allmaps.
 Require Import Wf_nat.
@@ -29,8 +29,8 @@ Require Import myMap.
 
 Section BDD_config_1.
 
-Definition BDDzero := ad_z.
-Definition BDDone := ad_x 1.
+Definition BDDzero := N0.
+Definition BDDone := Npos 1.
 Definition BDDstate := Map (BDDvar * (ad * ad)).
 Definition BDDsharing_map := Map (Map (Map ad)).
 Definition BDDfree_list := list ad.
@@ -52,12 +52,12 @@ Definition initBDDconfig :=
   (initBDDstate,
   (initBDDsharing_map,
   (initBDDfree_list,
-  (ad_x 2, (initBDDneg_memo, (initBDDor_memo, initBDDuniv_memo)))))).
+  (Npos 2, (initBDDneg_memo, (initBDDor_memo, initBDDuniv_memo)))))).
 
 Definition bs_node_height (bs : BDDstate) (node : ad) :=
   match MapGet _ bs node with
-  | NONE => ad_z
-  | SOME (x, (l, r)) => ad_S x
+  | None => N0
+  | Some (x, (l, r)) => ad_S x
   end.
 
 Definition node_height (cfg : BDDconfig) (node : ad) :=
@@ -69,22 +69,22 @@ Fixpoint bool_fun_of_BDD_1 (bs : BDDstate) (node : ad)
   | O => (* Error *)  bool_fun_zero
   | S bound' =>
       match MapGet _ bs node with
-      | NONE => if ad_eq node BDDzero then bool_fun_zero else bool_fun_one
-      | SOME (x, (l, r)) =>
+      | None => if Neqb node BDDzero then bool_fun_zero else bool_fun_one
+      | Some (x, (l, r)) =>
           bool_fun_if x (bool_fun_of_BDD_1 bs r bound')
             (bool_fun_of_BDD_1 bs l bound')
       end
   end.
 
 Definition bool_fun_of_BDD_bs (bs : BDDstate) (node : ad) :=
-  bool_fun_of_BDD_1 bs node (S (nat_of_ad (bs_node_height bs node))).
+  bool_fun_of_BDD_1 bs node (S (nat_of_N (bs_node_height bs node))).
 
 Definition bool_fun_of_BDD (cfg : BDDconfig) := bool_fun_of_BDD_bs (fst cfg).
 
 Definition nodes_preserved_bs (bs bs' : BDDstate) :=
   forall (x : BDDvar) (l r node : ad),
-  MapGet _ bs node = SOME _ (x, (l, r)) ->
-  MapGet _ bs' node = SOME _ (x, (l, r)).
+  MapGet _ bs node = Some (x, (l, r)) ->
+  MapGet _ bs' node = Some (x, (l, r)).
 
 Definition nodes_preserved (cfg cfg' : BDDconfig) :=
   nodes_preserved_bs (fst cfg) (fst cfg').
@@ -93,18 +93,18 @@ Inductive nodes_reachable (bs : BDDstate) : ad -> ad -> Prop :=
   | nodes_reachable_0 : forall node : ad, nodes_reachable bs node node
   | nodes_reachable_1 :
       forall (node node' l r : ad) (x : BDDvar),
-      MapGet _ bs node = SOME _ (x, (l, r)) ->
+      MapGet _ bs node = Some (x, (l, r)) ->
       nodes_reachable bs l node' -> nodes_reachable bs node node'
   | nodes_reachable_2 :
       forall (node node' l r : ad) (x : BDDvar),
-      MapGet _ bs node = SOME _ (x, (l, r)) ->
+      MapGet _ bs node = Some (x, (l, r)) ->
       nodes_reachable bs r node' -> nodes_reachable bs node node'.
 
 Definition node_preserved_bs (bs bs' : BDDstate) (node : ad) :=
   forall (x : BDDvar) (l r node' : ad),
   nodes_reachable bs node node' ->
-  MapGet _ bs node' = SOME _ (x, (l, r)) ->
-  MapGet _ bs' node' = SOME _ (x, (l, r)).
+  MapGet _ bs node' = Some (x, (l, r)) ->
+  MapGet _ bs' node' = Some (x, (l, r)).
 
 Definition node_preserved (cfg cfg' : BDDconfig) :=
   node_preserved_bs (fst cfg) (fst cfg').
@@ -127,8 +127,8 @@ Definition config_node_OK (cfg : BDDconfig) := node_OK (fst cfg).
 
 Definition no_new_node_bs (bs bs' : BDDstate) :=
   forall (x : BDDvar) (l r node : ad),
-  MapGet _ bs' node = SOME _ (x, (l, r)) ->
-  MapGet _ bs node = SOME _ (x, (l, r)).
+  MapGet _ bs' node = Some (x, (l, r)) ->
+  MapGet _ bs node = Some (x, (l, r)).
 
 Definition no_new_node (cfg cfg' : BDDconfig) :=
   no_new_node_bs (fst cfg) (fst cfg').
@@ -138,64 +138,64 @@ Inductive BDDbounded (bs : BDDstate) : ad -> BDDvar -> Prop :=
   | BDDbounded_1 : forall n : BDDvar, BDDbounded bs BDDone n
   | BDDbounded_2 :
       forall (node : ad) (n x : BDDvar) (l r : ad),
-      MapGet _ bs node = SOME _ (x, (l, r)) ->
+      MapGet _ bs node = Some (x, (l, r)) ->
       BDDcompare x n = Datatypes.Lt ->
-      ad_eq l r = false ->
+      Neqb l r = false ->
       BDDbounded bs l x -> BDDbounded bs r x -> BDDbounded bs node n.
 
 Definition BDD_OK (bs : BDDstate) (node : ad) :=
   match MapGet _ bs node with
-  | NONE => node = BDDzero \/ node = BDDone
-  | SOME (n, _) => BDDbounded bs node (ad_S n)
+  | None => node = BDDzero \/ node = BDDone
+  | Some (n, _) => BDDbounded bs node (ad_S n)
   end.
 
 Definition BDDstate_OK (bs : BDDstate) :=
-  MapGet _ bs BDDzero = NONE _ /\
-  MapGet _ bs BDDone = NONE _ /\
+  MapGet _ bs BDDzero = None /\
+  MapGet _ bs BDDone = None /\
   (forall a : ad, in_dom _ a bs = true -> BDD_OK bs a).
 
 Definition BDDsharing_OK (bs : BDDstate) (share : BDDsharing_map) :=
   forall (x : BDDvar) (l r a : ad),
-  MapGet3 _ share l r x = SOME _ a <-> MapGet _ bs a = SOME _ (x, (l, r)).
+  MapGet3 _ share l r x = Some a <-> MapGet _ bs a = Some (x, (l, r)).
 
 Definition BDDfree_list_OK (bs : BDDstate) (fl : BDDfree_list) 
   (cnt : ad) :=
   no_dup_list _ fl /\
   (forall node : ad,
    In node fl <->
-   ad_le (ad_x 2) node = true /\
-   ad_le (ad_S node) cnt = true /\ MapGet _ bs node = NONE _).
+   Nle (Npos 2) node = true /\
+   Nle (ad_S node) cnt = true /\ MapGet _ bs node = None).
 
 Definition cnt_OK (bs : BDDstate) (cnt : ad) :=
-  ad_le (ad_x 2) cnt = true /\
-  (forall a : ad, ad_le cnt a = true -> MapGet _ bs a = NONE _).
+  Nle (Npos 2) cnt = true /\
+  (forall a : ad, Nle cnt a = true -> MapGet _ bs a = None).
 
 Definition BDDneg_memo_OK (bs : BDDstate) (negm : BDDneg_memo) :=
   forall node node' : ad,
-  MapGet _ negm node = SOME _ node' ->
+  MapGet _ negm node = Some node' ->
   node_OK bs node /\
   node_OK bs node' /\
-  ad_eq (bs_node_height bs node') (bs_node_height bs node) = true /\
+  Neqb (bs_node_height bs node') (bs_node_height bs node) = true /\
   bool_fun_eq (bool_fun_of_BDD_bs bs node')
     (bool_fun_neg (bool_fun_of_BDD_bs bs node)).
 
 Definition BDDor_memo_OK (bs : BDDstate) (orm : BDDor_memo) :=
   forall node1 node2 node : ad,
-  MapGet2 _ orm node1 node2 = SOME _ node ->
+  MapGet2 _ orm node1 node2 = Some node ->
   node_OK bs node1 /\
   node_OK bs node2 /\
   node_OK bs node /\
-  ad_le (bs_node_height bs node)
+  Nle (bs_node_height bs node)
     (BDDvar_max (bs_node_height bs node1) (bs_node_height bs node2)) = true /\
   bool_fun_eq (bool_fun_of_BDD_bs bs node)
     (bool_fun_or (bool_fun_of_BDD_bs bs node1) (bool_fun_of_BDD_bs bs node2)).
 
 Definition BDDuniv_memo_OK (bs : BDDstate) (um : BDDuniv_memo) :=
   forall (x : BDDvar) (node node' : ad),
-  MapGet2 _ um node x = SOME _ node' ->
+  MapGet2 _ um node x = Some node' ->
   node_OK bs node /\
   node_OK bs node' /\
-  ad_le (bs_node_height bs node') (bs_node_height bs node) = true /\
+  Nle (bs_node_height bs node') (bs_node_height bs node) = true /\
   bool_fun_eq (bool_fun_of_BDD_bs bs node')
     (bool_fun_forall x (bool_fun_of_BDD_bs bs node)).
 
@@ -240,14 +240,14 @@ Proof.
 Qed.
 
 Lemma initBDDfree_list_OK :
- BDDfree_list_OK initBDDstate initBDDfree_list (ad_x 2).
+ BDDfree_list_OK initBDDstate initBDDfree_list (Npos 2).
 Proof.
   unfold BDDfree_list_OK, initBDDstate, initBDDfree_list in |- *.  simpl in |- *.  split.
   apply no_dup_nil.  split.  tauto.  intro.  elim H; clear H; intros.
-  elim H0; clear H0; intros.  cut (ad_le (ad_S node) node = true).  intro.
-  cut (ad_eq node node = false).  rewrite (ad_eq_correct node).
+  elim H0; clear H0; intros.  cut (Nle (ad_S node) node = true).  intro.
+  cut (Neqb node node = false).  rewrite (Neqb_correct node).
   intro; discriminate.  apply ad_S_le_then_neq.  assumption.
-  apply ad_le_trans with (b := ad_x 2).  assumption.  assumption.
+  apply Nle_trans with (b := Npos 2).  assumption.  assumption.
 Qed.
 
 Lemma initBDDneg_memo_OK :
@@ -278,7 +278,7 @@ Qed.
 
 Lemma config_OK_zero :
  forall cfg : BDDconfig,
- BDDconfig_OK cfg -> MapGet _ (fst cfg) BDDzero = NONE _.
+ BDDconfig_OK cfg -> MapGet _ (fst cfg) BDDzero = None.
 Proof.
   intro.  elim cfg.  clear cfg.  intros bs y.  elim y.  intros share cnt.
   intros.  elim H.  intros.  elim H0.  intros.  simpl in |- *.  exact H2.
@@ -286,7 +286,7 @@ Qed.
 
 Lemma config_OK_one :
  forall cfg : BDDconfig,
- BDDconfig_OK cfg -> MapGet _ (fst cfg) BDDone = NONE _.
+ BDDconfig_OK cfg -> MapGet _ (fst cfg) BDDone = None.
 Proof.
   intro.  elim cfg.  clear cfg.  intros bs y.  elim y.  intros share cnt.
   intros.  elim H.  intros.  elim H0.  intros.  simpl in |- *.  exact (proj1 H3).
@@ -304,7 +304,7 @@ Qed.
 
 Lemma node_height_zero :
  forall cfg : BDDconfig,
- BDDconfig_OK cfg -> ad_eq (node_height cfg BDDzero) ad_z = true.
+ BDDconfig_OK cfg -> Neqb (node_height cfg BDDzero) N0 = true.
 Proof.
   intros.  unfold node_height in |- *.  unfold bs_node_height in |- *.  rewrite (config_OK_zero cfg H).
   reflexivity.
@@ -312,7 +312,7 @@ Qed.
 
 Lemma node_height_one :
  forall cfg : BDDconfig,
- BDDconfig_OK cfg -> ad_eq (node_height cfg BDDone) ad_z = true.
+ BDDconfig_OK cfg -> Neqb (node_height cfg BDDone) N0 = true.
 Proof.
   intros.  unfold node_height in |- *.  unfold bs_node_height in |- *.  rewrite (config_OK_one cfg H).
   reflexivity.
@@ -373,9 +373,9 @@ Lemma BDDbounded_lemma :
  (exists x : BDDvar,
     (exists l : BDDvar,
        (exists r : BDDvar,
-          MapGet _ bs node = SOME _ (x, (l, r)) /\
+          MapGet _ bs node = Some (x, (l, r)) /\
           BDDcompare x n = Datatypes.Lt /\
-          ad_eq l r = false /\ BDDbounded bs l x /\ BDDbounded bs r x))).
+          Neqb l r = false /\ BDDbounded bs l x /\ BDDbounded bs r x))).
 Proof.
   intro.  intro.  intro.  intro.  elim H.  intros.  left.  trivial.  intros.
   right.  left.  trivial.  intros.  right.  right.  split with x.  split with l.
@@ -405,7 +405,7 @@ Qed.
 Lemma bs_node_height_left :
  forall (bs : BDDstate) (node l r : ad) (x : BDDvar),
  BDDstate_OK bs ->
- MapGet _ bs node = SOME _ (x, (l, r)) ->
+ MapGet _ bs node = Some (x, (l, r)) ->
  BDDcompare (bs_node_height bs l) (bs_node_height bs node) = Datatypes.Lt.
 Proof.
   intros.  intros.  unfold BDDstate_OK in H.  unfold BDD_OK in H.
@@ -430,7 +430,7 @@ Qed.
 Lemma bs_node_height_right :
  forall (bs : BDDstate) (node l r : ad) (x : BDDvar),
  BDDstate_OK bs ->
- MapGet _ bs node = SOME _ (x, (l, r)) ->
+ MapGet _ bs node = Some (x, (l, r)) ->
  BDDcompare (bs_node_height bs r) (bs_node_height bs node) = Datatypes.Lt.
 Proof.
   intros.  intros.  unfold BDDstate_OK in H.  unfold BDD_OK in H.
@@ -455,8 +455,8 @@ Qed.
 Lemma internal_node_lemma :
  forall (bs : BDDstate) (x : BDDvar) (l r node : ad),
  BDDstate_OK bs ->
- MapGet _ bs node = SOME _ (x, (l, r)) ->
- ad_eq l r = false /\ BDDbounded bs l x /\ BDDbounded bs r x.
+ MapGet _ bs node = Some (x, (l, r)) ->
+ Neqb l r = false /\ BDDbounded bs l x /\ BDDbounded bs r x.
 Proof.
   intros.  cut (BDD_OK bs node).  unfold BDD_OK in |- *.  rewrite H0.  intros.
   elim (BDDbounded_lemma bs node (ad_S x) H1).  intro.  rewrite H2 in H0.
@@ -472,14 +472,14 @@ Qed.
 
 Lemma high_bounded :
  forall (bs : BDDstate) (x : BDDvar) (l r node : ad),
- BDDstate_OK bs -> MapGet _ bs node = SOME _ (x, (l, r)) -> BDDbounded bs r x.
+ BDDstate_OK bs -> MapGet _ bs node = Some (x, (l, r)) -> BDDbounded bs r x.
 Proof.
 intros.  exact (proj2 (proj2 (internal_node_lemma bs x l r node H H0))).
 Qed.
 
 Lemma low_bounded :
  forall (bs : BDDstate) (x : BDDvar) (l r node : ad),
- BDDstate_OK bs -> MapGet _ bs node = SOME _ (x, (l, r)) -> BDDbounded bs l x.
+ BDDstate_OK bs -> MapGet _ bs node = Some (x, (l, r)) -> BDDbounded bs l x.
 Proof.
 intros.  exact (proj1 (proj2 (internal_node_lemma bs x l r node H H0))).
 Qed.
@@ -496,7 +496,7 @@ Qed.
 
 Lemma high_OK :
  forall (bs : BDDstate) (x : BDDvar) (l r node : ad),
- BDDstate_OK bs -> MapGet _ bs node = SOME _ (x, (l, r)) -> node_OK bs r.
+ BDDstate_OK bs -> MapGet _ bs node = Some (x, (l, r)) -> node_OK bs r.
 Proof.
   intros.  cut (BDDbounded bs r x).  intros.  apply BDDbounded_node_OK with (n := x).
   assumption.  unfold BDDstate_OK in H.  apply high_bounded with (node := node) (l := l).
@@ -505,7 +505,7 @@ Qed.
 
 Lemma low_OK :
  forall (bs : BDDstate) (x : BDDvar) (l r node : ad),
- BDDstate_OK bs -> MapGet _ bs node = SOME _ (x, (l, r)) -> node_OK bs l.
+ BDDstate_OK bs -> MapGet _ bs node = Some (x, (l, r)) -> node_OK bs l.
 Proof.
   intros.  cut (BDDbounded bs l x).  intros.  apply BDDbounded_node_OK with (n := x).
   assumption.  unfold BDDstate_OK in H.  apply low_bounded with (node := node) (r := r).
@@ -515,7 +515,7 @@ Qed.
 Lemma low_high_neq :
  forall (cfg : BDDconfig) (x : BDDvar) (l r node : ad),
  BDDconfig_OK cfg ->
- MapGet _ (fst cfg) node = SOME _ (x, (l, r)) -> ad_eq l r = false.
+ MapGet _ (fst cfg) node = Some (x, (l, r)) -> Neqb l r = false.
 Proof.
   intros.  exact (proj1 (internal_node_lemma (fst cfg) x l r node (proj1 H) H0)).
 Qed.
@@ -524,10 +524,10 @@ Lemma bs_node_height_left_le :
  forall bs : BDDstate,
  BDDstate_OK bs ->
  forall (x : BDDvar) (l r node : ad),
- MapGet _ bs node = SOME _ (x, (l, r)) ->
- ad_le (bs_node_height bs l) x = true.
+ MapGet _ bs node = Some (x, (l, r)) ->
+ Nle (bs_node_height bs l) x = true.
 Proof.
-  intros.  unfold ad_le in |- *.  apply nat_le_correct.  apply lt_n_Sm_le.
+  intros.  unfold Nle in |- *.  apply leb_correct.  apply lt_n_Sm_le.
   rewrite <- (ad_S_is_S x).  replace (ad_S x) with (bs_node_height bs node).
   apply BDDcompare_lt.  apply bs_node_height_left with (x := x) (r := r).  assumption.
   assumption.  unfold bs_node_height in |- *.  rewrite H0.  reflexivity.
@@ -537,10 +537,10 @@ Lemma bs_node_height_right_le :
  forall bs : BDDstate,
  BDDstate_OK bs ->
  forall (x : BDDvar) (l r node : ad),
- MapGet _ bs node = SOME _ (x, (l, r)) ->
- ad_le (bs_node_height bs r) x = true.
+ MapGet _ bs node = Some (x, (l, r)) ->
+ Nle (bs_node_height bs r) x = true.
 Proof.
-  intros.  unfold ad_le in |- *.  apply nat_le_correct.  apply lt_n_Sm_le.
+  intros.  unfold Nle in |- *.  apply leb_correct.  apply lt_n_Sm_le.
   rewrite <- (ad_S_is_S x).  replace (ad_S x) with (bs_node_height bs node).
   apply BDDcompare_lt.  apply bs_node_height_right with (x := x) (l := l).  assumption.
   assumption.  unfold bs_node_height in |- *.  rewrite H0.  reflexivity.
@@ -551,11 +551,11 @@ Lemma no_duplicate_node :
  BDDstate_OK bs ->
  BDDsharing_OK bs share ->
  forall (x : BDDvar) (l r node1 node2 : ad),
- MapGet _ bs node1 = SOME _ (x, (l, r)) ->
- MapGet _ bs node2 = SOME _ (x, (l, r)) -> node1 = node2.
+ MapGet _ bs node1 = Some (x, (l, r)) ->
+ MapGet _ bs node2 = Some (x, (l, r)) -> node1 = node2.
 Proof.
-  intros.  cut (MapGet3 _ share l r x = SOME _ node1).
-  cut (MapGet3 _ share l r x = SOME _ node2).  intros.  rewrite H3 in H4.
+  intros.  cut (MapGet3 _ share l r x = Some node1).
+  cut (MapGet3 _ share l r x = Some node2).  intros.  rewrite H3 in H4.
   injection H4.  intro.  rewrite H5; reflexivity.  unfold BDDsharing_OK in H0.
   apply (proj2 (H0 x l r node2)).  assumption.  apply (proj2 (H0 x l r node1)).
   assumption.
@@ -563,7 +563,7 @@ Qed.
 
 Lemma int_node_gt_1 :
  forall (bs : BDDstate) (node : ad),
- BDDstate_OK bs -> in_dom _ node bs = true -> ad_le (ad_x 2) node = true.
+ BDDstate_OK bs -> in_dom _ node bs = true -> Nle (Npos 2) node = true.
 Proof.
   intros.  apply ad_gt_1_lemma.  unfold not in |- *; intro.  unfold BDDstate_OK in H.
   unfold BDDzero in H.  rewrite <- H1 in H.  unfold in_dom in H0.
@@ -574,10 +574,10 @@ Qed.
 
 Lemma int_node_lt_cnt :
  forall (bs : BDDstate) (cnt node : ad),
- cnt_OK bs cnt -> in_dom _ node bs = true -> ad_le (ad_S node) cnt = true.
+ cnt_OK bs cnt -> in_dom _ node bs = true -> Nle (ad_S node) cnt = true.
 Proof.
-  intros.  unfold cnt_OK in H.  apply ad_lt_lemma.  apply not_true_is_false.
-  unfold not in |- *; intro.  unfold in_dom in H0.  unfold ad_le in |- *.
+  intros.  unfold cnt_OK in H.  apply Nlt_lemma.  apply not_true_is_false.
+  unfold not in |- *; intro.  unfold in_dom in H0.  unfold Nle in |- *.
   rewrite (proj2 H node H1) in H0.  discriminate.
 Qed.
 
@@ -608,16 +608,16 @@ Lemma nodes_preserved_bs_node_height_eq :
  BDDstate_OK bs1 ->
  BDDstate_OK bs2 ->
  node_OK bs1 node ->
- ad_eq (bs_node_height bs2 node) (bs_node_height bs1 node) = true.
+ Neqb (bs_node_height bs2 node) (bs_node_height bs1 node) = true.
 Proof.
   intros.  elim H2; intro.  rewrite H3.  unfold bs_node_height in |- *.
   unfold BDDstate_OK in H0.  rewrite (proj1 H0).  rewrite (proj1 H1).
-  apply ad_eq_correct.  elim H3; intros.  rewrite H4.  unfold bs_node_height in |- *.
+  apply Neqb_correct.  elim H3; intros.  rewrite H4.  unfold bs_node_height in |- *.
   rewrite (proj1 (proj2 H0)).  rewrite (proj1 (proj2 H1)).
-  apply ad_eq_correct.  elim (option_sum _ (MapGet _ bs1 node)).  intro y.
+  apply Neqb_correct.  elim (option_sum _ (MapGet _ bs1 node)).  intro y.
   elim y.  intro.  elim x.  intros y0 y1.  elim y1.  intros y2 y3 y4.  unfold bs_node_height in |- *.
   rewrite y4.  unfold nodes_preserved_bs in H.  rewrite (H y0 y2 y3 node y4).
-  apply ad_eq_correct.  intro y.  unfold in_dom in H4.  rewrite y in H4.
+  apply Neqb_correct.  intro y.  unfold in_dom in H4.  rewrite y in H4.
   discriminate.
 Qed.
 
@@ -627,7 +627,7 @@ Lemma nodes_preserved_node_height_eq :
  BDDconfig_OK cfg2 ->
  nodes_preserved cfg1 cfg2 ->
  config_node_OK cfg1 node ->
- ad_eq (node_height cfg2 node) (node_height cfg1 node) = true.
+ Neqb (node_height cfg2 node) (node_height cfg1 node) = true.
 Proof.
   intros.  unfold node_height in |- *.  apply nodes_preserved_bs_node_height_eq.  assumption.
   exact (proj1 H).  exact (proj1 H0).  assumption.  
@@ -702,7 +702,7 @@ Lemma nodes_reachable_lemma_1 :
  (exists x : BDDvar,
     (exists l : ad,
        (exists r : ad,
-          MapGet _ bs node = SOME _ (x, (l, r)) /\
+          MapGet _ bs node = Some (x, (l, r)) /\
           (nodes_reachable bs l node' \/ nodes_reachable bs r node')))).
 Proof.
   intros.  elim H.  left.  reflexivity.  intros.  right.  split with x.
@@ -725,7 +725,7 @@ Qed.
 Lemma reachable_node_OK_1 :
  forall (bs : BDDstate) (n : nat) (node1 node2 : ad),
  BDDstate_OK bs ->
- n = nat_of_ad (bs_node_height bs node1) ->
+ n = nat_of_N (bs_node_height bs node1) ->
  node_OK bs node1 -> nodes_reachable bs node1 node2 -> node_OK bs node2.
 Proof.
   intros bs n.  apply
@@ -734,17 +734,17 @@ Proof.
       (P := fun n : nat =>
             forall node1 node2 : ad,
             BDDstate_OK bs ->
-            n = nat_of_ad (bs_node_height bs node1) ->
+            n = nat_of_N (bs_node_height bs node1) ->
             node_OK bs node1 ->
             nodes_reachable bs node1 node2 -> node_OK bs node2).
   intros.  elim (nodes_reachable_lemma_1 _ _ _ H3).  intro.
   rewrite <- H4; assumption.  intros.  elim H4; clear H4; intros.
   elim H4; clear H4; intros.  elim H4; clear H4; intros.
   elim H4; clear H4; intros.  elim H5; clear H5; intros.
-  apply H with (m := nat_of_ad (bs_node_height bs x0)) (node1 := x0).  rewrite H1.
+  apply H with (m := nat_of_N (bs_node_height bs x0)) (node1 := x0).  rewrite H1.
   apply BDDcompare_lt.  apply bs_node_height_left with (x := x) (r := x1).  assumption.
   assumption.  assumption.  reflexivity.  apply low_OK with (node := node1) (x := x) (r := x1).
-  assumption.  assumption.  assumption.  apply H with (m := nat_of_ad (bs_node_height bs x1)) (node1 := x1).
+  assumption.  assumption.  assumption.  apply H with (m := nat_of_N (bs_node_height bs x1)) (node1 := x1).
   rewrite H1.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x) (l := x0).
   assumption.  assumption.  assumption.  reflexivity.  
   apply high_OK with (node := node1) (x := x) (l := x0).  assumption.  assumption.
@@ -759,7 +759,7 @@ Proof.
   intros.  apply
    reachable_node_OK_1
     with
-      (n := nat_of_ad (bs_node_height bs node1))
+      (n := nat_of_N (bs_node_height bs node1))
       (node1 := node1)
       (bs := bs).
   assumption.  reflexivity.  assumption.  assumption.  
@@ -793,7 +793,7 @@ Qed.
 Lemma high_used_bs :
  forall (bs : BDDstate) (ul : list ad) (x : BDDvar) (l r node : ad),
  used_node_bs bs ul node ->
- MapGet _ bs node = SOME _ (x, (l, r)) -> used_node_bs bs ul r.
+ MapGet _ bs node = Some (x, (l, r)) -> used_node_bs bs ul r.
 Proof.
   unfold used_node_bs in |- *.  intros.  elim H.  intros.  split with x0.  split.
   exact (proj1 H1).  apply nodes_reachable_trans with (node2 := node).
@@ -805,7 +805,7 @@ Lemma high_used'_bs :
  forall (bs : BDDstate) (ul : list ad) (x : BDDvar) (l r node : ad),
  BDDstate_OK bs ->
  used_node'_bs bs ul node ->
- MapGet _ bs node = SOME _ (x, (l, r)) -> used_node'_bs bs ul r.
+ MapGet _ bs node = Some (x, (l, r)) -> used_node'_bs bs ul r.
 Proof.
   unfold used_node'_bs in |- *.  intros.  elim H0.  intro.  rewrite H2 in H1.
   rewrite (proj1 H) in H1.  discriminate.  intro.  elim H2.  intro.
@@ -817,7 +817,7 @@ Qed.
 Lemma low_used_bs :
  forall (bs : BDDstate) (ul : list ad) (x : BDDvar) (l r node : ad),
  used_node_bs bs ul node ->
- MapGet _ bs node = SOME _ (x, (l, r)) -> used_node_bs bs ul l.
+ MapGet _ bs node = Some (x, (l, r)) -> used_node_bs bs ul l.
 Proof.
   unfold used_node_bs in |- *.  intros.  elim H.  intros.  split with x0.  split.
   exact (proj1 H1).  apply nodes_reachable_trans with (node2 := node).
@@ -829,7 +829,7 @@ Lemma low_used'_bs :
  forall (bs : BDDstate) (ul : list ad) (x : BDDvar) (l r node : ad),
  BDDstate_OK bs ->
  used_node'_bs bs ul node ->
- MapGet _ bs node = SOME _ (x, (l, r)) -> used_node'_bs bs ul l.
+ MapGet _ bs node = Some (x, (l, r)) -> used_node'_bs bs ul l.
 Proof.
   unfold used_node'_bs in |- *.  intros.  elim H0.  intro.  rewrite H2 in H1.
   rewrite (proj1 H) in H1.  discriminate.  intro.  elim H2.  intro.
@@ -841,7 +841,7 @@ Qed.
 Lemma high_used :
  forall (cfg : BDDconfig) (ul : list ad) (x : BDDvar) (l r node : ad),
  used_node cfg ul node ->
- MapGet _ (fst cfg) node = SOME _ (x, (l, r)) -> used_node cfg ul r.
+ MapGet _ (fst cfg) node = Some (x, (l, r)) -> used_node cfg ul r.
 Proof.
   unfold used_node in |- *.  intros.  apply high_used_bs with (x := x) (l := l) (node := node).
   assumption.  assumption.
@@ -851,7 +851,7 @@ Lemma high_used' :
  forall (cfg : BDDconfig) (ul : list ad) (x : BDDvar) (l r node : ad),
  BDDconfig_OK cfg ->
  used_node' cfg ul node ->
- MapGet _ (fst cfg) node = SOME _ (x, (l, r)) -> used_node' cfg ul r.
+ MapGet _ (fst cfg) node = Some (x, (l, r)) -> used_node' cfg ul r.
 Proof.
   unfold used_node' in |- *.  intros.  apply high_used'_bs with (x := x) (l := l) (node := node).
   exact (proj1 H).  assumption.  assumption.
@@ -860,7 +860,7 @@ Qed.
 Lemma low_used :
  forall (cfg : BDDconfig) (ul : list ad) (x : BDDvar) (l r node : ad),
  used_node cfg ul node ->
- MapGet _ (fst cfg) node = SOME _ (x, (l, r)) -> used_node cfg ul l.
+ MapGet _ (fst cfg) node = Some (x, (l, r)) -> used_node cfg ul l.
 Proof.
   unfold used_node in |- *.  intros.  apply low_used_bs with (x := x) (r := r) (node := node).
   assumption.  assumption.
@@ -870,7 +870,7 @@ Lemma low_used' :
  forall (cfg : BDDconfig) (ul : list ad) (x : BDDvar) (l r node : ad),
  BDDconfig_OK cfg ->
  used_node' cfg ul node ->
- MapGet _ (fst cfg) node = SOME _ (x, (l, r)) -> used_node' cfg ul l.
+ MapGet _ (fst cfg) node = Some (x, (l, r)) -> used_node' cfg ul l.
 Proof.
   unfold used_node' in |- *.  intros.  apply low_used'_bs with (x := x) (r := r) (node := node).
   exact (proj1 H).  assumption.  assumption.
@@ -930,7 +930,7 @@ Lemma node_preserved_bs_reachable_1 :
  forall bs bs' : BDDstate,
  BDDstate_OK bs ->
  forall (n : nat) (node node' : ad),
- n = nat_of_ad (bs_node_height bs node) ->
+ n = nat_of_N (bs_node_height bs node) ->
  node_preserved_bs bs bs' node ->
  nodes_reachable bs node node' -> nodes_reachable bs' node node'.
 Proof.
@@ -940,7 +940,7 @@ Proof.
     with
       (P := fun n : nat =>
             forall node node' : ad,
-            n = nat_of_ad (bs_node_height bs node) ->
+            n = nat_of_N (bs_node_height bs node) ->
             node_preserved_bs bs bs' node ->
             nodes_reachable bs node node' -> nodes_reachable bs' node node').
   clear n.  intros.  elim (nodes_reachable_lemma_1 bs node node' H2).
@@ -948,14 +948,14 @@ Proof.
   inversion H4.  inversion H5.  inversion H6.  elim H8.  intro.
   apply nodes_reachable_1 with (x := x) (l := x0) (r := x1).  apply H1.
   apply nodes_reachable_0.  assumption.
-  apply H with (m := nat_of_ad (bs_node_height bs x0)).  rewrite H0.
+  apply H with (m := nat_of_N (bs_node_height bs x0)).  rewrite H0.
   apply BDDcompare_lt.  apply bs_node_height_left with (x := x) (r := x1).  assumption.
   assumption.  reflexivity.  unfold node_preserved_bs in |- *.  intros.  apply H1.
   apply nodes_reachable_1 with (x := x) (l := x0) (r := x1).  assumption.  assumption.
   assumption.  assumption.  intro.
   apply nodes_reachable_2 with (x := x) (l := x0) (r := x1).  apply H1.
   apply nodes_reachable_0.  assumption.  
-  apply H with (m := nat_of_ad (bs_node_height bs x1)).  rewrite H0.
+  apply H with (m := nat_of_N (bs_node_height bs x1)).  rewrite H0.
   apply BDDcompare_lt.  apply bs_node_height_right with (x := x) (l := x0).  assumption.  
   assumption.  reflexivity.  unfold node_preserved_bs in |- *.  intros.  apply H1.
   apply nodes_reachable_2 with (x := x) (l := x0) (r := x1).  assumption.  assumption.
@@ -970,7 +970,7 @@ Lemma node_preserved_bs_reachable :
 Proof.
   intros.  apply
    node_preserved_bs_reachable_1
-    with (n := nat_of_ad (bs_node_height bs node)) (bs := bs).
+    with (n := nat_of_N (bs_node_height bs node)) (bs := bs).
   assumption.  reflexivity.  assumption.  assumption.
 Qed.
 
@@ -1206,34 +1206,34 @@ Lemma bool_fun_of_BDD_1_change_bound :
  forall bs : BDDstate,
  BDDstate_OK bs ->
  forall (bound : nat) (node : ad),
- nat_of_ad (bs_node_height bs node) < bound ->
+ nat_of_N (bs_node_height bs node) < bound ->
  bool_fun_eq (bool_fun_of_BDD_1 bs node bound)
-   (bool_fun_of_BDD_1 bs node (S (nat_of_ad (bs_node_height bs node)))).
+   (bool_fun_of_BDD_1 bs node (S (nat_of_N (bs_node_height bs node)))).
 Proof.
   intros bs H bound.  apply
    lt_wf_ind
     with
       (P := fun bound : nat =>
             forall node : ad,
-            nat_of_ad (bs_node_height bs node) < bound ->
+            nat_of_N (bs_node_height bs node) < bound ->
             bool_fun_eq (bool_fun_of_BDD_1 bs node bound)
               (bool_fun_of_BDD_1 bs node
-                 (S (nat_of_ad (bs_node_height bs node))))).
-  intro.  elim n.  intros.  absurd (nat_of_ad (bs_node_height bs node) < 0).
+                 (S (nat_of_N (bs_node_height bs node))))).
+  intro.  elim n.  intros.  absurd (nat_of_N (bs_node_height bs node) < 0).
   apply lt_n_O.  assumption.  clear n bound.  intros.  simpl in |- *.
   elim (option_sum _ (MapGet (BDDvar * (ad * ad)) bs node)).  intro y.  elim y; clear y.
   intro x.  elim x; clear x.  intros x y.  elim y; clear y; intros l r H3.
-  rewrite H3.  cut (nat_of_ad (bs_node_height bs l) < nat_of_ad (bs_node_height bs node)).
-  cut (nat_of_ad (bs_node_height bs r) < nat_of_ad (bs_node_height bs node)).  intros.
+  rewrite H3.  cut (nat_of_N (bs_node_height bs l) < nat_of_N (bs_node_height bs node)).
+  cut (nat_of_N (bs_node_height bs r) < nat_of_N (bs_node_height bs node)).  intros.
   apply bool_fun_if_preserves_eq.  apply
    bool_fun_eq_trans
-    with (bool_fun_of_BDD_1 bs r (S (nat_of_ad (bs_node_height bs r)))).
-  apply H1.  unfold lt in |- *.  apply le_n.  apply lt_trans_1 with (y := nat_of_ad (bs_node_height bs node)).
+    with (bool_fun_of_BDD_1 bs r (S (nat_of_N (bs_node_height bs r)))).
+  apply H1.  unfold lt in |- *.  apply le_n.  apply lt_trans_1 with (y := nat_of_N (bs_node_height bs node)).
   assumption.  assumption.  apply bool_fun_eq_sym.  apply H1.  assumption.
   assumption.  apply
    bool_fun_eq_trans
-    with (bool_fun_of_BDD_1 bs l (S (nat_of_ad (bs_node_height bs l)))).
-  apply H1.  unfold lt in |- *.  apply le_n.  apply lt_trans_1 with (y := nat_of_ad (bs_node_height bs node)).
+    with (bool_fun_of_BDD_1 bs l (S (nat_of_N (bs_node_height bs l)))).
+  apply H1.  unfold lt in |- *.  apply le_n.  apply lt_trans_1 with (y := nat_of_N (bs_node_height bs node)).
   assumption.  assumption.  apply bool_fun_eq_sym.  apply H1.  assumption.
   assumption.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x) (l := l).
   assumption.  assumption.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x) (r := r).
@@ -1260,7 +1260,7 @@ Lemma bool_fun_of_BDD_bs_int :
  forall bs : BDDstate,
  BDDstate_OK bs ->
  forall (x : BDDvar) (l r node : ad),
- MapGet _ bs node = SOME _ (x, (l, r)) ->
+ MapGet _ bs node = Some (x, (l, r)) ->
  bool_fun_eq (bool_fun_of_BDD_bs bs node)
    (bool_fun_if x (bool_fun_of_BDD_bs bs r) (bool_fun_of_BDD_bs bs l)).
 Proof.
@@ -1291,7 +1291,7 @@ Qed.
 Lemma bool_fun_of_BDD_int :
  forall (cfg : BDDconfig) (x : BDDvar) (l r node : ad),
  BDDconfig_OK cfg ->
- MapGet _ (fst cfg) node = SOME _ (x, (l, r)) ->
+ MapGet _ (fst cfg) node = Some (x, (l, r)) ->
  bool_fun_eq (bool_fun_of_BDD cfg node)
    (bool_fun_if x (bool_fun_of_BDD cfg r) (bool_fun_of_BDD cfg l)).
 Proof.
@@ -1304,7 +1304,7 @@ Lemma bool_fun_of_BDD_1_ext :
  bool_fun_ext (bool_fun_of_BDD_1 bs node bound).
 Proof.
   simple induction bound.  intros.  simpl in |- *.  exact bool_fun_ext_zero.  simpl in |- *.  intros.
-  elim (MapGet _ bs node).  elim (ad_eq node BDDzero).  exact bool_fun_ext_zero.
+  elim (MapGet _ bs node).  Focus 2. elim (Neqb node BDDzero).  exact bool_fun_ext_zero.
   exact bool_fun_ext_one.  intro a.  elim a.  intros y y0.  elim y0.  intros.
   apply bool_fun_ext_if.  apply H.  apply H.
 Qed.
@@ -1320,9 +1320,9 @@ Lemma BDDvar_independent_1 :
  forall bs : BDDstate,
  BDDstate_OK bs ->
  forall (n : nat) (node : ad) (x : BDDvar),
- n = nat_of_ad (bs_node_height bs node) ->
+ n = nat_of_N (bs_node_height bs node) ->
  node_OK bs node ->
- ad_le (bs_node_height bs node) x = true ->
+ Nle (bs_node_height bs node) x = true ->
  bool_fun_independent (bool_fun_of_BDD_bs bs node) x.
 Proof.
   intros bs H n.  apply
@@ -1330,9 +1330,9 @@ Proof.
     with
       (P := fun n : nat =>
             forall (node : ad) (x : BDDvar),
-            n = nat_of_ad (bs_node_height bs node) ->
+            n = nat_of_N (bs_node_height bs node) ->
             node_OK bs node ->
-            ad_le (bs_node_height bs node) x = true ->
+            Nle (bs_node_height bs node) x = true ->
             bool_fun_independent (bool_fun_of_BDD_bs bs node) x).
   intros.  elim H2; intro.  rewrite H4.  apply bool_fun_eq_independent with (bf1 := bool_fun_zero).
   apply bool_fun_eq_sym.  apply bool_fun_of_BDD_bs_zero.  assumption.
@@ -1347,20 +1347,20 @@ Proof.
       (bf1 := bool_fun_if x' (bool_fun_of_BDD_bs bs r)
                 (bool_fun_of_BDD_bs bs l)).
   apply bool_fun_eq_sym.  apply bool_fun_of_BDD_bs_int.  assumption.  assumption.
-  apply bool_fun_independent_if.  apply H0 with (m := nat_of_ad (bs_node_height bs r)).
+  apply bool_fun_independent_if.  apply H0 with (m := nat_of_N (bs_node_height bs r)).
   rewrite H1.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x') (l := l).
   assumption.  assumption.  reflexivity.  apply high_OK with (x := x') (l := l) (node := node).
-  assumption.  assumption.  unfold ad_le in |- *.  apply nat_le_correct.  apply lt_le_weak.
-  apply lt_le_trans with (m := nat_of_ad (bs_node_height bs node)).  apply BDDcompare_lt.
+  assumption.  assumption.  unfold Nle in |- *.  apply leb_correct.  apply lt_le_weak.
+  apply lt_le_trans with (m := nat_of_N (bs_node_height bs node)).  apply BDDcompare_lt.
   apply bs_node_height_right with (x := x') (l := l).  assumption.  assumption.
-  apply nat_le_complete.  assumption.  apply H0 with (m := nat_of_ad (bs_node_height bs l)).
+  apply leb_complete.  assumption.  apply H0 with (m := nat_of_N (bs_node_height bs l)).
   rewrite H1.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x') (r := r).
   assumption.  assumption.  reflexivity.  apply low_OK with (x := x') (r := r) (node := node).
-  assumption.  assumption.  unfold ad_le in |- *.  apply nat_le_correct.  apply lt_le_weak.
-  apply lt_le_trans with (m := nat_of_ad (bs_node_height bs node)).  apply BDDcompare_lt.
+  assumption.  assumption.  unfold Nle in |- *.  apply leb_correct.  apply lt_le_weak.
+  apply lt_le_trans with (m := nat_of_N (bs_node_height bs node)).  apply BDDcompare_lt.
   apply bs_node_height_left with (x := x') (r := r).  assumption.  assumption.
-  apply nat_le_complete.  assumption.  unfold bs_node_height in H3.  rewrite H5 in H3.
-  rewrite (ad_eq_comm x x').  apply ad_S_le_then_neq.  assumption.  intro y.
+  apply leb_complete.  assumption.  unfold bs_node_height in H3.  rewrite H5 in H3.
+  rewrite (Neqb_comm x x').  apply ad_S_le_then_neq.  assumption.  intro y.
   unfold in_dom in H4.  rewrite y in H4; discriminate.
 Qed.
 
@@ -1369,10 +1369,10 @@ Lemma BDDvar_independent_bs :
  BDDstate_OK bs ->
  forall (node : ad) (x : BDDvar),
  node_OK bs node ->
- ad_le (bs_node_height bs node) x = true ->
+ Nle (bs_node_height bs node) x = true ->
  bool_fun_independent (bool_fun_of_BDD_bs bs node) x.
 Proof.
-  intros.  apply BDDvar_independent_1 with (n := nat_of_ad (bs_node_height bs node)).
+  intros.  apply BDDvar_independent_1 with (n := nat_of_N (bs_node_height bs node)).
   assumption.  reflexivity.  assumption.  assumption.
 Qed.
 
@@ -1380,10 +1380,10 @@ Lemma BDDvar_independent_low :
  forall bs : BDDstate,
  BDDstate_OK bs ->
  forall (x : BDDvar) (l r node : ad),
- MapGet _ bs node = SOME _ (x, (l, r)) ->
+ MapGet _ bs node = Some (x, (l, r)) ->
  bool_fun_independent (bool_fun_of_BDD_bs bs l) x.
 Proof.
-  intros.  apply BDDvar_independent_1 with (n := nat_of_ad (bs_node_height bs l)).
+  intros.  apply BDDvar_independent_1 with (n := nat_of_N (bs_node_height bs l)).
   assumption.  reflexivity.  apply low_OK with (x := x) (r := r) (node := node).
   assumption.  assumption.  apply bs_node_height_left_le with (node := node) (r := r).
   assumption.  assumption.
@@ -1393,10 +1393,10 @@ Lemma BDDvar_independent_high :
  forall bs : BDDstate,
  BDDstate_OK bs ->
  forall (x : BDDvar) (l r node : ad),
- MapGet _ bs node = SOME _ (x, (l, r)) ->
+ MapGet _ bs node = Some (x, (l, r)) ->
  bool_fun_independent (bool_fun_of_BDD_bs bs r) x.
 Proof.
-  intros.  apply BDDvar_independent_1 with (n := nat_of_ad (bs_node_height bs r)).
+  intros.  apply BDDvar_independent_1 with (n := nat_of_N (bs_node_height bs r)).
   assumption.  reflexivity.  apply high_OK with (x := x) (l := l) (node := node).
   assumption.  assumption.  apply bs_node_height_right_le with (node := node) (l := l).
   assumption.  assumption.
@@ -1407,7 +1407,7 @@ Lemma bool_fun_of_BDD_bs_high :
  forall bs : BDDstate,
  BDDstate_OK bs ->
  forall (x : BDDvar) (l r node : ad),
- MapGet _ bs node = SOME _ (x, (l, r)) ->
+ MapGet _ bs node = Some (x, (l, r)) ->
  bool_fun_eq (bool_fun_of_BDD_bs bs r)
    (bool_fun_restrict (bool_fun_of_BDD_bs bs node) x true).
 Proof.
@@ -1428,7 +1428,7 @@ Lemma bool_fun_of_BDD_bs_low :
  forall bs : BDDstate,
  BDDstate_OK bs ->
  forall (x : BDDvar) (l r node : ad),
- MapGet _ bs node = SOME _ (x, (l, r)) ->
+ MapGet _ bs node = Some (x, (l, r)) ->
  bool_fun_eq (bool_fun_of_BDD_bs bs l)
    (bool_fun_restrict (bool_fun_of_BDD_bs bs node) x false).
 Proof.
@@ -1450,8 +1450,8 @@ Lemma BDDunique_1 :
  BDDsharing_OK bs share ->
  forall (n : nat) (node1 node2 : ad),
  n =
- max (nat_of_ad (bs_node_height bs node1))
-   (nat_of_ad (bs_node_height bs node2)) ->
+ max (nat_of_N (bs_node_height bs node1))
+   (nat_of_N (bs_node_height bs node2)) ->
  node_OK bs node1 ->
  node_OK bs node2 ->
  bool_fun_eq (bool_fun_of_BDD_bs bs node1) (bool_fun_of_BDD_bs bs node2) ->
@@ -1463,8 +1463,8 @@ Proof.
       (P := fun n : nat =>
             forall node1 node2 : ad,
             n =
-            max (nat_of_ad (bs_node_height bs node1))
-              (nat_of_ad (bs_node_height bs node2)) ->
+            max (nat_of_N (bs_node_height bs node1))
+              (nat_of_N (bs_node_height bs node2)) ->
             node_OK bs node1 ->
             node_OK bs node2 ->
             bool_fun_eq (bool_fun_of_BDD_bs bs node1)
@@ -1479,14 +1479,14 @@ Proof.
   rewrite H6.  apply bool_fun_of_BDD_bs_one.  assumption.
   elim (option_sum _ (MapGet _ bs node2)).  intro y.  elim y; clear y; intro x.
   elim x; clear x.  intros x2 y.  elim y; clear y; intros l2 r2 H7.
-  absurd (l2 = r2).  unfold not in |- *; intro.  cut (ad_eq l2 r2 = true).  intro.
+  absurd (l2 = r2).  unfold not in |- *; intro.  cut (Neqb l2 r2 = true).  intro.
   rewrite (proj1 (internal_node_lemma bs x2 l2 r2 node2 H H7)) in H9.
-  discriminate.  rewrite H8.  apply ad_eq_correct.
+  discriminate.  rewrite H8.  apply Neqb_correct.
   apply
    H0
     with
-      (m := max (nat_of_ad (bs_node_height bs l2))
-              (nat_of_ad (bs_node_height bs r2))).
+      (m := max (nat_of_N (bs_node_height bs l2))
+              (nat_of_N (bs_node_height bs r2))).
   rewrite H1.  apply lt_max_2.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x2) (r := r2).
   assumption.  assumption.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x2) (l := l2).
   assumption.  assumption.  reflexivity.  apply low_OK with (node := node2) (x := x2) (r := r2).
@@ -1529,14 +1529,14 @@ Proof.
   rewrite H5.  rewrite H6.  reflexivity.  elim (option_sum _ (MapGet _ bs node2)).
   intro y.  elim y; clear y; intro.  elim x; clear x.  intros x2 y.
   elim y; clear y; intros l2 r2 H7.  absurd (l2 = r2).  unfold not in |- *; intro.
-  cut (ad_eq l2 r2 = true).  intro.
+  cut (Neqb l2 r2 = true).  intro.
   rewrite (proj1 (internal_node_lemma bs x2 l2 r2 node2 H H7)) in H9.
-  discriminate.  rewrite H8.  apply ad_eq_correct.
+  discriminate.  rewrite H8.  apply Neqb_correct.
   apply
    H0
     with
-      (m := max (nat_of_ad (bs_node_height bs l2))
-              (nat_of_ad (bs_node_height bs r2))).
+      (m := max (nat_of_N (bs_node_height bs l2))
+              (nat_of_N (bs_node_height bs r2))).
   rewrite H1.  apply lt_max_2.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x2) (r := r2).
   assumption.  assumption.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x2) (l := l2).
   assumption.  assumption.  reflexivity.  apply low_OK with (node := node2) (x := x2) (r := r2).
@@ -1568,13 +1568,13 @@ Proof.
   unfold in_dom in H6.  rewrite y in H6.  discriminate.  elim (option_sum _ (MapGet _ bs node1)).
   intro y.  elim y; clear y; intro.  elim x; clear x.  intros x1 y.  elim y; clear y.
   intros l1 r1 H6.  elim H3; intro.  absurd (l1 = r1).  unfold not in |- *; intro.
-  cut (ad_eq l1 r1 = true).  intro.  rewrite (proj1 (internal_node_lemma bs x1 l1 r1 node1 H H6)) in H9.
-  discriminate.  rewrite H8.  apply ad_eq_correct.
+  cut (Neqb l1 r1 = true).  intro.  rewrite (proj1 (internal_node_lemma bs x1 l1 r1 node1 H H6)) in H9.
+  discriminate.  rewrite H8.  apply Neqb_correct.
   apply
    H0
     with
-      (m := max (nat_of_ad (bs_node_height bs l1))
-              (nat_of_ad (bs_node_height bs r1))).
+      (m := max (nat_of_N (bs_node_height bs l1))
+              (nat_of_N (bs_node_height bs r1))).
   rewrite H1.  apply lt_max_1.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x1) (r := r1).
   assumption.  assumption.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x1) (l := l1).
   assumption.  assumption.  reflexivity.  apply low_OK with (node := node1) (x := x1) (r := r1).
@@ -1604,14 +1604,14 @@ Proof.
   apply bool_fun_restrict_preserves_eq.  apply bool_fun_eq_sym.  assumption.
   apply bool_fun_eq_sym.  apply bool_fun_of_BDD_bs_high with (l := l1).  assumption.
   assumption.  elim H7; clear H7; intro.  absurd (l1 = r1).  unfold not in |- *; intro.
-  cut (ad_eq l1 r1 = true).  intro.
+  cut (Neqb l1 r1 = true).  intro.
   rewrite (proj1 (internal_node_lemma bs x1 l1 r1 node1 H H6)) in H9.
-  discriminate.  rewrite H8.  apply ad_eq_correct.
+  discriminate.  rewrite H8.  apply Neqb_correct.
   apply
    H0
     with
-      (m := max (nat_of_ad (bs_node_height bs l1))
-              (nat_of_ad (bs_node_height bs r1))).
+      (m := max (nat_of_N (bs_node_height bs l1))
+              (nat_of_N (bs_node_height bs r1))).
   rewrite H1.  apply lt_max_1.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x1) (r := r1).
   assumption.  assumption.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x1) (l := l1).
   assumption.  assumption.  reflexivity.  apply low_OK with (node := node1) (x := x1) (r := r1).
@@ -1652,8 +1652,8 @@ Proof.
   reflexivity.  apply
    H0
     with
-      (m := max (nat_of_ad (bs_node_height bs r1))
-              (nat_of_ad (bs_node_height bs r2))).
+      (m := max (nat_of_N (bs_node_height bs r1))
+              (nat_of_N (bs_node_height bs r2))).
   rewrite H1.  apply lt_max_1_2.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x1) (l := l1).
   assumption.  assumption.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x2) (l := l2).
   assumption.  assumption.  reflexivity.  apply high_OK with (node := node1) (x := x1) (l := l1).
@@ -1670,8 +1670,8 @@ Proof.
   assumption.  assumption.  apply
    H0
     with
-      (m := max (nat_of_ad (bs_node_height bs l1))
-              (nat_of_ad (bs_node_height bs l2))).
+      (m := max (nat_of_N (bs_node_height bs l1))
+              (nat_of_N (bs_node_height bs l2))).
   rewrite H1.  apply lt_max_1_2.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x1) (r := r1).
   assumption.  assumption.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x2) (r := r2).
   assumption.  assumption.  reflexivity.  apply low_OK with (node := node1) (x := x1) (r := r1).
@@ -1685,14 +1685,14 @@ Proof.
     with (bf2 := bool_fun_restrict (bool_fun_of_BDD_bs bs node2) x2 false).
   rewrite (BDD_EGAL_complete _ _ y).  apply bool_fun_restrict_preserves_eq.
   assumption.  apply bool_fun_eq_sym.  apply bool_fun_of_BDD_bs_low with (r := r2).
-  assumption.  assumption.  absurd (l2 = r2).  unfold not in |- *; intro.  cut (ad_eq l2 r2 = true).
+  assumption.  assumption.  absurd (l2 = r2).  unfold not in |- *; intro.  cut (Neqb l2 r2 = true).
   intro.  rewrite (proj1 (internal_node_lemma bs x2 l2 r2 node2 H H8)) in H10.
-  discriminate.  rewrite H9.  apply ad_eq_correct.
+  discriminate.  rewrite H9.  apply Neqb_correct.
   apply
    H0
     with
-      (m := max (nat_of_ad (bs_node_height bs l2))
-              (nat_of_ad (bs_node_height bs r2))).
+      (m := max (nat_of_N (bs_node_height bs l2))
+              (nat_of_N (bs_node_height bs r2))).
   rewrite H1.  apply lt_max_2.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x2) (r := r2).
   assumption.  assumption.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x2) (l := l2).
   assumption.  assumption.  reflexivity.  apply low_OK with (node := node2) (x := x2) (r := r2).
@@ -1710,16 +1710,16 @@ Proof.
   apply bool_fun_of_BDD_bs_high with (l := l2).  assumption.  assumption.
   apply bool_fun_eq_independent with (bf1 := bool_fun_of_BDD_bs bs node1).
   assumption.  apply BDDvar_independent_bs.  assumption.  assumption.
-  unfold ad_le in |- *.  apply nat_le_correct.  unfold bs_node_height in |- *.  rewrite H6.
+  unfold Nle in |- *.  apply leb_correct.  unfold bs_node_height in |- *.  rewrite H6.
   rewrite (ad_S_is_S x1).  apply lt_le_S.  apply BDDcompare_lt.  assumption.
-  intro.  absurd (l1 = r1).  unfold not in |- *; intro.  cut (ad_eq l1 r1 = true).  intro.
+  intro.  absurd (l1 = r1).  unfold not in |- *; intro.  cut (Neqb l1 r1 = true).  intro.
   rewrite (proj1 (internal_node_lemma bs x1 l1 r1 node1 H H6)) in H10.
-  discriminate.  rewrite H9.  apply ad_eq_correct.
+  discriminate.  rewrite H9.  apply Neqb_correct.
   apply
    H0
     with
-      (m := max (nat_of_ad (bs_node_height bs l1))
-              (nat_of_ad (bs_node_height bs r1))).
+      (m := max (nat_of_N (bs_node_height bs l1))
+              (nat_of_N (bs_node_height bs r1))).
   rewrite H1.  apply lt_max_1.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x1) (r := r1).
   assumption.  assumption.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x1) (l := l1).
   assumption.  assumption.  reflexivity.  apply low_OK with (node := node1) (x := x1) (r := r1).
@@ -1737,7 +1737,7 @@ Proof.
   apply bool_fun_of_BDD_bs_high with (l := l1).  assumption.  assumption.
   apply bool_fun_eq_independent with (bf1 := bool_fun_of_BDD_bs bs node2).
   apply bool_fun_eq_sym.  assumption.  apply BDDvar_independent_bs.  assumption.
-  assumption.  unfold ad_le in |- *.  apply nat_le_correct.  unfold bs_node_height in |- *.
+  assumption.  unfold Nle in |- *.  apply leb_correct.  unfold bs_node_height in |- *.
   rewrite H8.  rewrite (ad_S_is_S x2).  apply lt_le_S.  apply BDDcompare_lt.
   apply BDDcompare_sup_inf.  assumption.  intro y.  unfold in_dom in H7.
   rewrite y in H7; discriminate.  intro y.  unfold in_dom in H5.
@@ -1750,23 +1750,23 @@ Lemma BDDunique :
  config_node_OK cfg node1 ->
  config_node_OK cfg node2 ->
  bool_fun_eq (bool_fun_of_BDD cfg node1) (bool_fun_of_BDD cfg node2) ->
- ad_eq node1 node2 = true.
+ Neqb node1 node2 = true.
 Proof.
-  intros.  cut (node1 = node2).  intro.  rewrite H3.  apply ad_eq_correct.
+  intros.  cut (node1 = node2).  intro.  rewrite H3.  apply Neqb_correct.
   apply
    BDDunique_1
     with
       (bs := fst cfg)
       (share := fst (snd cfg))
-      (n := max (nat_of_ad (bs_node_height (fst cfg) node1))
-              (nat_of_ad (bs_node_height (fst cfg) node2))).
+      (n := max (nat_of_N (bs_node_height (fst cfg) node1))
+              (nat_of_N (bs_node_height (fst cfg) node2))).
   exact (proj1 H).  exact (proj1 (proj2 H)).  reflexivity.
   assumption.  assumption.  assumption.
 Qed.
 
 Lemma nodes_preserved_bs_bool_fun_1 :
  forall (bs1 bs2 : BDDstate) (n : nat) (node : ad),
- n = nat_of_ad (bs_node_height bs1 node) ->
+ n = nat_of_N (bs_node_height bs1 node) ->
  BDDstate_OK bs1 ->
  BDDstate_OK bs2 ->
  nodes_preserved_bs bs1 bs2 ->
@@ -1778,7 +1778,7 @@ Proof.
     with
       (P := fun n : nat =>
             forall node : ad,
-            n = nat_of_ad (bs_node_height bs1 node) ->
+            n = nat_of_N (bs_node_height bs1 node) ->
             BDDstate_OK bs1 ->
             BDDstate_OK bs2 ->
             nodes_preserved_bs bs1 bs2 ->
@@ -1793,7 +1793,7 @@ Proof.
   assumption.  apply bool_fun_eq_sym.  apply bool_fun_of_BDD_bs_one.
   assumption.  elim (option_sum _ (MapGet _ bs1 node)).  intro y.
   elim y; clear y.  intro.  elim x; clear x; intros x y.
-  elim y; clear y; intros l r H7.  cut (MapGet _ bs2 node = SOME _ (x, (l, r))).
+  elim y; clear y; intros l r H7.  cut (MapGet _ bs2 node = Some (x, (l, r))).
   intro.  cut (bool_fun_eq (bool_fun_of_BDD_bs bs2 l) (bool_fun_of_BDD_bs bs1 l)).
   cut (bool_fun_eq (bool_fun_of_BDD_bs bs2 r) (bool_fun_of_BDD_bs bs1 r)).  intros.
   apply
@@ -1809,10 +1809,10 @@ Proof.
                 (bool_fun_of_BDD_bs bs1 l)).
   apply bool_fun_if_preserves_eq.  assumption.  assumption.  apply bool_fun_eq_sym.
   apply bool_fun_of_BDD_bs_int.  assumption.  assumption.
-  apply H with (m := nat_of_ad (bs_node_height bs1 r)).  rewrite H0.  apply BDDcompare_lt.
+  apply H with (m := nat_of_N (bs_node_height bs1 r)).  rewrite H0.  apply BDDcompare_lt.
   apply bs_node_height_right with (x := x) (l := l).  assumption.  assumption.  reflexivity.
   assumption.  assumption.  assumption.  apply high_OK with (x := x) (l := l) (node := node).
-  assumption.  assumption.  apply H with (m := nat_of_ad (bs_node_height bs1 l)).
+  assumption.  assumption.  apply H with (m := nat_of_N (bs_node_height bs1 l)).
   rewrite H0.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x) (r := r).
   assumption.  assumption.  reflexivity.  assumption.  assumption.  assumption.
   apply low_OK with (x := x) (r := r) (node := node).  assumption.  assumption.  apply H3.
@@ -1830,7 +1830,7 @@ Lemma nodes_preserved_bs_bool_fun :
 Proof.
   intros.  apply
    nodes_preserved_bs_bool_fun_1
-    with (n := nat_of_ad (bs_node_height bs1 node)).
+    with (n := nat_of_N (bs_node_height bs1 node)).
   reflexivity.  assumption.  assumption.  assumption.  assumption.
 Qed.
 
@@ -1856,15 +1856,15 @@ Proof.
   cut
    (node_OK bs node /\
     node_OK bs node' /\
-    ad_eq (bs_node_height bs node') (bs_node_height bs node) = true /\
+    Neqb (bs_node_height bs node') (bs_node_height bs node) = true /\
     bool_fun_eq (bool_fun_of_BDD_bs bs node')
       (bool_fun_neg (bool_fun_of_BDD_bs bs node))).
   intros.  split.  apply nodes_preserved_bs_node_OK with (bs1 := bs).  assumption.
   exact (proj1 H4).  split.  apply nodes_preserved_bs_node_OK with (bs1 := bs).
   assumption.  exact (proj1 (proj2 H4)).  split.
-  cut (ad_eq (bs_node_height bs' node') (bs_node_height bs node') = true).  intro.
-  cut (ad_eq (bs_node_height bs' node) (bs_node_height bs node) = true).  intro.
-  rewrite (ad_eq_complete _ _ H5).  rewrite (ad_eq_complete _ _ H6).
+  cut (Neqb (bs_node_height bs' node') (bs_node_height bs node') = true).  intro.
+  cut (Neqb (bs_node_height bs' node) (bs_node_height bs node) = true).  intro.
+  rewrite (Neqb_complete _ _ H5).  rewrite (Neqb_complete _ _ H6).
   exact (proj1 (proj2 (proj2 H4))).  apply nodes_preserved_bs_node_height_eq.
   assumption.  assumption.  assumption.  exact (proj1 H4).
   apply nodes_preserved_bs_node_height_eq.  assumption.  assumption.  assumption.  
@@ -1890,7 +1890,7 @@ Proof.
    (node_OK bs node1 /\
     node_OK bs node2 /\
     node_OK bs node /\
-    ad_le (bs_node_height bs node)
+    Nle (bs_node_height bs node)
       (BDDvar_max (bs_node_height bs node1) (bs_node_height bs node2)) = true /\
     bool_fun_eq (bool_fun_of_BDD_bs bs node)
       (bool_fun_or (bool_fun_of_BDD_bs bs node1)
@@ -1901,11 +1901,11 @@ Proof.
   split.  apply nodes_preserved_bs_node_OK with (bs1 := bs).  assumption.
   assumption.  split.  apply nodes_preserved_bs_node_OK with (bs1 := bs).
   assumption.  assumption.  split.
-  cut (ad_eq (bs_node_height bs' node1) (bs_node_height bs node1) = true).
-  cut (ad_eq (bs_node_height bs' node2) (bs_node_height bs node2) = true).
-  cut (ad_eq (bs_node_height bs' node) (bs_node_height bs node) = true).  intros.
-  rewrite (ad_eq_complete _ _ H9).  rewrite (ad_eq_complete _ _ H10).
-  rewrite (ad_eq_complete _ _ H11).  assumption.  apply nodes_preserved_bs_node_height_eq.
+  cut (Neqb (bs_node_height bs' node1) (bs_node_height bs node1) = true).
+  cut (Neqb (bs_node_height bs' node2) (bs_node_height bs node2) = true).
+  cut (Neqb (bs_node_height bs' node) (bs_node_height bs node) = true).  intros.
+  rewrite (Neqb_complete _ _ H9).  rewrite (Neqb_complete _ _ H10).
+  rewrite (Neqb_complete _ _ H11).  assumption.  apply nodes_preserved_bs_node_height_eq.
   assumption.  assumption.  assumption.  assumption.  apply nodes_preserved_bs_node_height_eq.
   assumption.  assumption.  assumption.  assumption.  apply nodes_preserved_bs_node_height_eq.
   assumption.  assumption.  assumption.  assumption.  
@@ -1932,15 +1932,15 @@ Proof.
   cut
    (node_OK bs node /\
     node_OK bs node' /\
-    ad_le (bs_node_height bs node') (bs_node_height bs node) = true /\
+    Nle (bs_node_height bs node') (bs_node_height bs node) = true /\
     bool_fun_eq (bool_fun_of_BDD_bs bs node')
       (bool_fun_forall x (bool_fun_of_BDD_bs bs node))).
   intros.  split.  apply nodes_preserved_bs_node_OK with (bs1 := bs).  assumption.
   exact (proj1 H4).  split.  apply nodes_preserved_bs_node_OK with (bs1 := bs).
   assumption.  exact (proj1 (proj2 H4)).  split.
-  cut (ad_eq (bs_node_height bs' node') (bs_node_height bs node') = true).  intro.
-  cut (ad_eq (bs_node_height bs' node) (bs_node_height bs node) = true).  intro.
-  rewrite (ad_eq_complete _ _ H5).  rewrite (ad_eq_complete _ _ H6).
+  cut (Neqb (bs_node_height bs' node') (bs_node_height bs node') = true).  intro.
+  cut (Neqb (bs_node_height bs' node) (bs_node_height bs node) = true).  intro.
+  rewrite (Neqb_complete _ _ H5).  rewrite (Neqb_complete _ _ H6).
   exact (proj1 (proj2 (proj2 H4))).  apply nodes_preserved_bs_node_height_eq.
   assumption.  assumption.  assumption.  exact (proj1 H4).
   apply nodes_preserved_bs_node_height_eq.  assumption.  assumption.  assumption.
@@ -1962,7 +1962,7 @@ Lemma node_preserved_bs_bool_fun_1 :
  BDDstate_OK bs' ->
  node_preserved_bs bs bs' node ->
  node_OK bs node ->
- n = nat_of_ad (bs_node_height bs node) ->
+ n = nat_of_N (bs_node_height bs node) ->
  bool_fun_eq (bool_fun_of_BDD_bs bs' node) (bool_fun_of_BDD_bs bs node).
 Proof.
   intro.  apply
@@ -1974,7 +1974,7 @@ Proof.
             BDDstate_OK bs' ->
             node_preserved_bs bs bs' node ->
             node_OK bs node ->
-            n = nat_of_ad (bs_node_height bs node) ->
+            n = nat_of_N (bs_node_height bs node) ->
             bool_fun_eq (bool_fun_of_BDD_bs bs' node)
               (bool_fun_of_BDD_bs bs node)).
   clear n.  intros.  elim H3.  intro.  rewrite H5.
@@ -1988,7 +1988,7 @@ Proof.
   elim x; clear x.  intros x y.  elim y; clear y; intros l r H7.
   cut
    (MapGet (BDDvar * (ad * ad)) bs' node =
-    SOME (BDDvar * (ad * ad)) (x, (l, r))).  intro.
+    Some (x, (l, r))).  intro.
   apply
    bool_fun_eq_trans
     with
@@ -2000,14 +2000,14 @@ Proof.
     with
       (bf2 := bool_fun_if x (bool_fun_of_BDD_bs bs r)
                 (bool_fun_of_BDD_bs bs l)).
-  apply bool_fun_if_preserves_eq.  apply H with (m := nat_of_ad (bs_node_height bs r)).
+  apply bool_fun_if_preserves_eq.  apply H with (m := nat_of_N (bs_node_height bs r)).
   rewrite H4.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x) (l := l).
   assumption.  assumption.  assumption.  assumption.  unfold node_preserved_bs in |- *.
   intros.  apply H2.  apply nodes_reachable_trans with (node2 := r).
   apply nodes_reachable_2 with (x := x) (l := l) (r := r).  assumption.
   apply nodes_reachable_0.  assumption.  assumption.  
   apply high_OK with (x := x) (l := l) (node := node).  assumption.  assumption.  
-  reflexivity.  apply H with (m := nat_of_ad (bs_node_height bs l)).  rewrite H4.
+  reflexivity.  apply H with (m := nat_of_N (bs_node_height bs l)).  rewrite H4.
   apply BDDcompare_lt.  apply bs_node_height_left with (x := x) (r := r).  assumption.  
   assumption.  assumption.  assumption.  unfold node_preserved_bs in |- *.  intros.
   apply H2.  apply nodes_reachable_trans with (node2 := l).
@@ -2029,7 +2029,7 @@ Lemma node_preserved_bs_bool_fun :
 Proof.
   intros.  apply
    node_preserved_bs_bool_fun_1
-    with (n := nat_of_ad (bs_node_height bs node)).
+    with (n := nat_of_N (bs_node_height bs node)).
   assumption.  assumption.  assumption.  assumption.  reflexivity.  
 Qed.
 
@@ -2039,7 +2039,7 @@ Lemma node_preserved_bs_node_height_eq :
  BDDstate_OK bs' ->
  node_preserved_bs bs bs' node ->
  node_OK bs node ->
- ad_eq (bs_node_height bs' node) (bs_node_height bs node) = true.
+ Neqb (bs_node_height bs' node) (bs_node_height bs node) = true.
 Proof.
   intros.  unfold bs_node_height in |- *.  elim H2; intros.  rewrite H3.
   rewrite (proj1 H).  rewrite (proj1 H0).  reflexivity.
@@ -2047,7 +2047,7 @@ Proof.
   rewrite (proj1 (proj2 H)).  reflexivity.
   elim (option_sum _ (MapGet (BDDvar * (ad * ad)) bs node)).  intro y.  elim y.  intro x.
   elim x.  intros y0 y1.  elim y1.  intros y2 y3 y4.  rewrite y4.
-  rewrite (H1 y0 y2 y3 node (nodes_reachable_0 bs node)).  apply ad_eq_correct.
+  rewrite (H1 y0 y2 y3 node (nodes_reachable_0 bs node)).  apply Neqb_correct.
   assumption.  intro y.  unfold in_dom in H4.  rewrite y in H4.  discriminate.
 Qed.
 
@@ -2057,7 +2057,7 @@ Lemma node_preserved_node_height_eq :
  BDDconfig_OK cfg' ->
  node_preserved cfg cfg' node ->
  config_node_OK cfg node ->
- ad_eq (node_height cfg' node) (node_height cfg node) = true.
+ Neqb (node_height cfg' node) (node_height cfg node) = true.
 Proof.
   intros.  unfold node_height in |- *.  apply node_preserved_bs_node_height_eq.  exact (proj1 H).
   exact (proj1 H0).  assumption.  assumption.
@@ -2070,7 +2070,7 @@ Lemma used_nodes_preserved_node_height_eq :
  used_nodes_preserved cfg cfg' ul ->
  used_list_OK cfg ul ->
  used_node cfg ul node ->
- ad_eq (node_height cfg' node) (node_height cfg node) = true.
+ Neqb (node_height cfg' node) (node_height cfg node) = true.
 Proof.
   intros.  apply node_preserved_node_height_eq.  assumption.  assumption.
   unfold node_preserved in |- *.  apply used_nodes_preserved_preserved_bs with (ul := ul).
@@ -2086,13 +2086,13 @@ Lemma used_nodes_preserved'_node_height_eq :
  used_nodes_preserved cfg cfg' ul ->
  used_list_OK cfg ul ->
  used_node' cfg ul node ->
- ad_eq (node_height cfg' node) (node_height cfg node) = true.
+ Neqb (node_height cfg' node) (node_height cfg node) = true.
 Proof.
   intros.  elim H3.  intro.  rewrite H4.
-  rewrite (ad_eq_complete _ _ (node_height_zero cfg H)).
-  rewrite (ad_eq_complete _ _ (node_height_zero cfg' H0)).  reflexivity.  intro.
-  elim H4.  intro.  rewrite H5.  rewrite (ad_eq_complete _ _ (node_height_one cfg H)).
-  rewrite (ad_eq_complete _ _ (node_height_one cfg' H0)).  reflexivity.  intro.
+  rewrite (Neqb_complete _ _ (node_height_zero cfg H)).
+  rewrite (Neqb_complete _ _ (node_height_zero cfg' H0)).  reflexivity.  intro.
+  elim H4.  intro.  rewrite H5.  rewrite (Neqb_complete _ _ (node_height_one cfg H)).
+  rewrite (Neqb_complete _ _ (node_height_one cfg' H0)).  reflexivity.  intro.
   apply used_nodes_preserved_node_height_eq with (ul := ul).  assumption.  assumption.
   assumption.  assumption.  assumption.
 Qed.
@@ -2165,7 +2165,7 @@ Lemma BDDnegm_put_OK :
  BDDconfig_OK cfg ->
  config_node_OK cfg node ->
  config_node_OK cfg node' ->
- ad_eq (node_height cfg node') (node_height cfg node) = true ->
+ Neqb (node_height cfg node') (node_height cfg node) = true ->
  bool_fun_eq (bool_fun_of_BDD cfg node')
    (bool_fun_neg (bool_fun_of_BDD cfg node)) ->
  BDDconfig_OK (BDDneg_memo_put cfg node node').
@@ -2178,11 +2178,11 @@ Proof.
   exact (proj1 (proj2 (proj2 (proj2 H)))).  simpl in |- *.  simpl in H.
   split.  unfold BDDneg_memo_OK in |- *.  intros node0 node'0 H4.
   rewrite (MapPut_semantics ad y7 node node' node0) in H4.
-  elim (sumbool_of_bool (ad_eq node node0)).  intro y9.  rewrite y9 in H4.
+  elim (sumbool_of_bool (Neqb node node0)).  intro y9.  rewrite y9 in H4.
   injection H4.  intro H5.  rewrite <- H5.  split.  unfold config_node_OK in H0, H1.
-  simpl in H0, H1.  rewrite <- (ad_eq_complete _ _ y9).  assumption.  split.
-  assumption.  split.  rewrite <- (ad_eq_complete _ _ y9).  assumption.
-  rewrite <- (ad_eq_complete _ _ y9).  assumption.  intro y9.  rewrite y9 in H4.
+  simpl in H0, H1.  rewrite <- (Neqb_complete _ _ y9).  assumption.  split.
+  assumption.  split.  rewrite <- (Neqb_complete _ _ y9).  assumption.
+  rewrite <- (Neqb_complete _ _ y9).  assumption.  intro y9.  rewrite y9 in H4.
   apply (proj1 (proj2 (proj2 (proj2 (proj2 H))))).
   assumption.  exact (proj2 (proj2 (proj2 (proj2 (proj2 H))))).
 Qed.
@@ -2209,7 +2209,7 @@ Lemma BDDorm_put_OK :
  config_node_OK cfg node1 ->
  config_node_OK cfg node2 ->
  config_node_OK cfg node' ->
- ad_le (node_height cfg node')
+ Nle (node_height cfg node')
    (BDDvar_max (node_height cfg node1) (node_height cfg node2)) = true ->
  bool_fun_eq (bool_fun_of_BDD cfg node')
    (bool_fun_or (bool_fun_of_BDD cfg node1) (bool_fun_of_BDD cfg node2)) ->
@@ -2224,10 +2224,10 @@ Proof.
   exact (proj1 (proj2 (proj2 (proj2 (proj2 H))))).  simpl in |- *.
   simpl in H.  unfold BDDor_memo_OK in |- *.  split.  intros.
   rewrite (MapPut2_semantics ad y9 node1 node2 node0 node3 node') in H5.
-  elim (sumbool_of_bool (ad_eq node1 node0 && ad_eq node2 node3)).  intro y11.
+  elim (sumbool_of_bool (Neqb node1 node0 && Neqb node2 node3)).  intro y11.
   rewrite y11 in H5.  injection H5.  intro H6.  rewrite <- H6.
-  elim (andb_prop _ _ y11).  intros H7 H8.  rewrite <- (ad_eq_complete _ _ H7).
-  rewrite <- (ad_eq_complete _ _ H8).  split.  assumption.  split.  assumption.
+  elim (andb_prop _ _ y11).  intros H7 H8.  rewrite <- (Neqb_complete _ _ H7).
+  rewrite <- (Neqb_complete _ _ H8).  split.  assumption.  split.  assumption.
   split.  assumption.  split.  assumption.  assumption.  intro y11.
   rewrite y11 in H5.
   apply (proj1 (proj2 (proj2 (proj2 (proj2 (proj2 H)))))).
@@ -2266,7 +2266,7 @@ Lemma BDDum_put_OK :
  BDDconfig_OK cfg ->
  config_node_OK cfg node ->
  config_node_OK cfg node' ->
- ad_le (node_height cfg node') (node_height cfg node) = true ->
+ Nle (node_height cfg node') (node_height cfg node) = true ->
  bool_fun_eq (bool_fun_of_BDD cfg node')
    (bool_fun_forall x (bool_fun_of_BDD cfg node)) ->
  BDDconfig_OK (BDDuniv_memo_put cfg x node node').
@@ -2282,10 +2282,10 @@ Proof.
   split.  exact (proj1 (proj2 (proj2 (proj2 (proj2 (proj2 H)))))).
   unfold BDDuniv_memo_OK in |- *.  intros x0 node0 node'0 H4.
   rewrite (MapPut2_semantics ad y10 node x node0 x0 node') in H4.
-  elim (sumbool_of_bool (ad_eq node node0 && ad_eq x x0)).
+  elim (sumbool_of_bool (Neqb node node0 && Neqb x x0)).
   intro y11.  rewrite y11 in H4.  injection H4.  intro H5.  rewrite <- H5.
-  elim (andb_prop _ _ y11).  intros H6 H7.  rewrite <- (ad_eq_complete _ _ H6).
-  rewrite <- (ad_eq_complete _ _ H7).  split.  assumption.  split.  assumption. 
+  elim (andb_prop _ _ y11).  intros H6 H7.  rewrite <- (Neqb_complete _ _ H6).
+  rewrite <- (Neqb_complete _ _ H7).  split.  assumption.  split.  assumption. 
   split.  assumption.  assumption.  intro y11.  rewrite y11 in H4.
   apply (proj2 (proj2 (proj2 (proj2 (proj2 (proj2 H)))))).
   assumption.
@@ -2296,7 +2296,7 @@ Lemma not_zero_is_one :
  forall (cfg : BDDconfig) (node : ad),
  config_node_OK cfg node ->
  in_dom _ node (fst cfg) = false ->
- ad_eq node BDDzero = false -> ad_eq node BDDone = true.
+ Neqb node BDDzero = false -> Neqb node BDDone = true.
 Proof.
   intros.  elim H.  intro.  rewrite H2 in H1.  simpl in H1.  discriminate.
   intro.  elim H2.  intro.  rewrite H3.  reflexivity.  intro.  rewrite H0 in H3.

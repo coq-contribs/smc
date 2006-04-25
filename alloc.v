@@ -17,7 +17,7 @@
 Require Import Bool.	
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.		
+Require Import ZArith NArith Nnat Ndec Ndigits.		
 Require Import Map.
 Require Import Allmaps.			
 Require Import List.
@@ -44,28 +44,28 @@ Hypothesis cfg_OK : BDDconfig_OK cfg.
 Hypothesis ul_OK : used_list_OK cfg ul.
 Hypothesis l_used' : used_node' cfg ul l.
 Hypothesis r_used' : used_node' cfg ul r.
-Hypothesis l_neq_r : ad_eq l r = false.
+Hypothesis l_neq_r : Neqb l r = false.
 Hypothesis
   xl_lt_x :
     forall (xl : BDDvar) (ll rl : ad),
-    MapGet _ (bs_of_cfg cfg) l = SOME _ (xl, (ll, rl)) ->
+    MapGet _ (bs_of_cfg cfg) l = Some (xl, (ll, rl)) ->
     BDDcompare xl x = Datatypes.Lt.
 Hypothesis
   xr_lt_x :
     forall (xr : BDDvar) (lr rr : ad),
-    MapGet _ (bs_of_cfg cfg) r = SOME _ (xr, (lr, rr)) ->
+    MapGet _ (bs_of_cfg cfg) r = Some (xr, (lr, rr)) ->
     BDDcompare xr x = Datatypes.Lt.
 Hypothesis
   no_dup :
     forall (x' : BDDvar) (l' r' a : ad),
-    MapGet _ (bs_of_cfg cfg) a = SOME _ (x', (l', r')) ->
+    MapGet _ (bs_of_cfg cfg) a = Some (x', (l', r')) ->
     (x, (l, r)) <> (x', (l', r')).
 
 Let new_cfg := gc cfg ul.
 
 Lemma no_dup_new :
  forall (x' : BDDvar) (l' r' a : ad),
- MapGet _ (bs_of_cfg new_cfg) a = SOME _ (x', (l', r')) ->
+ MapGet _ (bs_of_cfg new_cfg) a = Some (x', (l', r')) ->
  (x, (l, r)) <> (x', (l', r')).
 Proof.
   intros.  apply no_dup with (a := a).
@@ -112,7 +112,7 @@ Qed.
 
 Lemma new_xl_lt_x :
  forall (xl : BDDvar) (ll rl : ad),
- MapGet _ (bs_of_cfg new_cfg) l = SOME _ (xl, (ll, rl)) ->
+ MapGet _ (bs_of_cfg new_cfg) l = Some (xl, (ll, rl)) ->
  BDDcompare xl x = Datatypes.Lt.
 Proof.
   cut (node_OK (bs_of_cfg cfg) l).  intro H00.  elim H00.  intros.
@@ -122,7 +122,7 @@ Proof.
   rewrite (config_OK_one _ new_cfg_OK) in H1.  discriminate.
   elim (option_sum _ (MapGet _ (bs_of_cfg cfg) l)).  intro y.  elim y.  intro x0.
   elim x0.  intro y0.  intro y1.  elim y1; intros y2 y3 y4.
-  cut (MapGet _ (bs_of_cfg new_cfg) l = SOME _ (y0, (y2, y3))).  intro.
+  cut (MapGet _ (bs_of_cfg new_cfg) l = Some (y0, (y2, y3))).  intro.
   rewrite H2 in H1.  injection H1.  intros.  rewrite H3 in y4.
   rewrite H4 in y4.  rewrite H5 in y4.  apply xl_lt_x with (ll := ll) (rl := rl).
   assumption.  cut (node_preserved_bs (bs_of_cfg cfg) (bs_of_cfg new_cfg) l).
@@ -136,7 +136,7 @@ Qed.
 
 Lemma new_xr_lt_x :
  forall (xr : BDDvar) (lr rr : ad),
- MapGet _ (bs_of_cfg new_cfg) r = SOME _ (xr, (lr, rr)) ->
+ MapGet _ (bs_of_cfg new_cfg) r = Some (xr, (lr, rr)) ->
  BDDcompare xr x = Datatypes.Lt.
 Proof.
   cut (node_OK (bs_of_cfg cfg) r).  intro H00.  elim H00.  intros.
@@ -146,7 +146,7 @@ Proof.
   rewrite (config_OK_one _ new_cfg_OK) in H1.  discriminate.
   elim (option_sum _ (MapGet _ (bs_of_cfg cfg) r)).  intro y.  elim y.  intro x0.
   elim x0.  intro y0.  intro y1.  elim y1; intros y2 y3 y4.
-  cut (MapGet _ (bs_of_cfg new_cfg) r = SOME _ (y0, (y2, y3))).  intro.
+  cut (MapGet _ (bs_of_cfg new_cfg) r = Some (y0, (y2, y3))).  intro.
   rewrite H2 in H1.  injection H1.  intros.  rewrite H3 in y4.
   rewrite H4 in y4.  rewrite H5 in y4.  apply xr_lt_x with (lr := lr) (rr := rr).
   assumption.  cut (node_preserved_bs (bs_of_cfg cfg) (bs_of_cfg new_cfg) r).
@@ -174,8 +174,8 @@ Definition BDDalloc : BDDconfig * ad :=
 Lemma BDDalloc_lemma_1 :
  forall a : ad,
  MapGet _ (fst (fst BDDalloc)) a =
- (if ad_eq a (snd BDDalloc)
-  then SOME _ (x, (l, r))
+ (if Neqb a (snd BDDalloc)
+  then Some (x, (l, r))
   else MapGet _ (fst new_cfg) a).
 Proof.
   intro.  unfold BDDalloc in |- *.  rewrite (cfg_comp new_cfg).
@@ -183,12 +183,12 @@ Proof.
   rewrite
    (MapPut_semantics (BDDvar * (ad * ad)) (bs_of_cfg new_cfg)
       (cnt_of_cfg new_cfg) (x, (l, r)) a).
-  rewrite (ad_eq_comm a (cnt_of_cfg new_cfg)).  reflexivity.  intro.
+  rewrite (Neqb_comm a (cnt_of_cfg new_cfg)).  reflexivity.  intro.
   elim H; clear H.  intros.  elim H; clear H; intros.  rewrite H.  simpl in |- *.
   rewrite
    (MapPut_semantics (BDDvar * (ad * ad)) (bs_of_cfg new_cfg) x0 
       (x, (l, r)) a).
-  rewrite (ad_eq_comm a x0).  reflexivity.
+  rewrite (Neqb_comm a x0).  reflexivity.
 Qed.
 
 Lemma BDDalloc_lemma_2 :
@@ -201,14 +201,14 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma BDDalloc_lemma_3 : MapGet _ (bs_of_cfg new_cfg) (snd BDDalloc) = NONE _.
+Lemma BDDalloc_lemma_3 : MapGet _ (bs_of_cfg new_cfg) (snd BDDalloc) = None.
 Proof.
   intros.  elim BDDalloc_lemma_2.  intros.  elim new_cfg_OK.  intros.
   elim H1; intros.  elim H3; intros.
   exact (proj2 (proj2 (proj1 (proj2 H4 (snd BDDalloc)) H))).
   intro.  rewrite <- H.
   apply (proj2 (proj1 (proj2 (proj2 (proj2 new_cfg_OK))))).
-  apply ad_le_refl.
+  apply Nle_refl.
 Qed.
 
 Lemma BDDalloc_lemma_4 :
@@ -230,41 +230,41 @@ Lemma BDDalloc_preserves_nodes :
  nodes_preserved_bs (bs_of_cfg new_cfg) (fst (fst BDDalloc)).
 Proof.
   intros.  unfold nodes_preserved_bs in |- *.  intros.  rewrite BDDalloc_lemma_1.
-  elim (sumbool_of_bool (ad_eq node (snd BDDalloc))).  intro y.
-  rewrite (ad_eq_complete _ _ y) in H.  rewrite BDDalloc_lemma_3 in H.
+  elim (sumbool_of_bool (Neqb node (snd BDDalloc))).  intro y.
+  rewrite (Neqb_complete _ _ y) in H.  rewrite BDDalloc_lemma_3 in H.
   discriminate H.  intro y.  rewrite y.  assumption.  
 Qed.
 
-Lemma BDDalloc_zero : MapGet _ (fst (fst BDDalloc)) BDDzero = NONE _.
+Lemma BDDalloc_zero : MapGet _ (fst (fst BDDalloc)) BDDzero = None.
 Proof.
   intros.  elim BDDalloc_lemma_2.  intro.  rewrite (BDDalloc_lemma_1 BDDzero).
-  elim (sumbool_of_bool (ad_eq BDDzero (snd BDDalloc))).  intro y.
-  rewrite <- (ad_eq_complete _ _ y) in H.
-  absurd (ad_le (ad_x 2) BDDzero = true).  unfold BDDzero in |- *.  unfold not in |- *.
-  intro.  unfold ad_le in H0.  simpl in H0.  discriminate.  
+  elim (sumbool_of_bool (Neqb BDDzero (snd BDDalloc))).  intro y.
+  rewrite <- (Neqb_complete _ _ y) in H.
+  absurd (Nle (Npos 2) BDDzero = true).  unfold BDDzero in |- *.  unfold not in |- *.
+  intro.  unfold Nle in H0.  simpl in H0.  discriminate.  
   apply (proj1 (proj1 (proj2 (fl_of_cfg_OK _ new_cfg_OK) BDDzero) H)).
   intro y.  rewrite y.  exact (proj1 (bs_of_cfg_OK _ new_cfg_OK)).  intro.
   rewrite (BDDalloc_lemma_1 BDDzero).  rewrite <- H.
-  elim (sumbool_of_bool (ad_eq BDDzero (cnt_of_cfg new_cfg))).  intro y.
-  cut (ad_le (ad_x 2) (cnt_of_cfg new_cfg) = true).
-  rewrite <- (ad_eq_complete _ _ y).  intro.  unfold ad_le in H0.  simpl in H0.
+  elim (sumbool_of_bool (Neqb BDDzero (cnt_of_cfg new_cfg))).  intro y.
+  cut (Nle (Npos 2) (cnt_of_cfg new_cfg) = true).
+  rewrite <- (Neqb_complete _ _ y).  intro.  unfold Nle in H0.  simpl in H0.
   discriminate.  exact (proj1 (cnt_of_cfg_OK _ new_cfg_OK)).  intro y.
   rewrite y.  exact (proj1 (bs_of_cfg_OK _ new_cfg_OK)).
 Qed.
 
-Lemma BDDalloc_one : MapGet _ (fst (fst BDDalloc)) BDDone = NONE _.
+Lemma BDDalloc_one : MapGet _ (fst (fst BDDalloc)) BDDone = None.
 Proof.
   intros.  elim BDDalloc_lemma_2.  intro.  rewrite (BDDalloc_lemma_1 BDDone).
-  elim (sumbool_of_bool (ad_eq BDDone (snd BDDalloc))).  intro y.
-  rewrite <- (ad_eq_complete _ _ y) in H.
-  absurd (ad_le (ad_x 2) BDDone = true).  unfold BDDone in |- *.  unfold not in |- *.
-  intro.  unfold ad_le in H0.  simpl in H0.  discriminate.  
+  elim (sumbool_of_bool (Neqb BDDone (snd BDDalloc))).  intro y.
+  rewrite <- (Neqb_complete _ _ y) in H.
+  absurd (Nle (Npos 2) BDDone = true).  unfold BDDone in |- *.  unfold not in |- *.
+  intro.  unfold Nle in H0.  simpl in H0.  discriminate.  
   apply (proj1 (proj1 (proj2 (fl_of_cfg_OK _ new_cfg_OK) BDDone) H)).
   intro y.  rewrite y.  exact (proj1 (proj2 (bs_of_cfg_OK _ new_cfg_OK))).
   intro.  rewrite (BDDalloc_lemma_1 BDDone).  rewrite <- H.
-  elim (sumbool_of_bool (ad_eq BDDone (cnt_of_cfg new_cfg))).  intro y.
-  cut (ad_le (ad_x 2) (cnt_of_cfg new_cfg) = true).
-  rewrite <- (ad_eq_complete _ _ y).  intro.  unfold ad_le in H0.  simpl in H0.
+  elim (sumbool_of_bool (Neqb BDDone (cnt_of_cfg new_cfg))).  intro y.
+  cut (Nle (Npos 2) (cnt_of_cfg new_cfg) = true).
+  rewrite <- (Neqb_complete _ _ y).  intro.  unfold Nle in H0.  simpl in H0.
   discriminate.  exact (proj1 (cnt_of_cfg_OK _ new_cfg_OK)).  intro y.
   rewrite y.  exact (proj1 (proj2 (bs_of_cfg_OK _ new_cfg_OK))).
 Qed.
@@ -273,7 +273,7 @@ Lemma BDDalloc_BDD_OK : BDD_OK (fst (fst BDDalloc)) (snd BDDalloc).
 Proof.
   intros.  unfold BDD_OK in |- *.  cut
    (MapGet (BDDvar * (ad * ad)) (fst (fst BDDalloc)) (snd BDDalloc) =
-    SOME _ (x, (l, r))).
+    Some (x, (l, r))).
   intro H.  rewrite H.  apply BDDbounded_2 with (x := x) (l := l) (r := r).  assumption.
   apply BDDlt_compare.  rewrite (ad_S_is_S x).  unfold lt in |- *.  apply le_n.
   apply not_true_is_false.  unfold not in |- *; intro H0.  rewrite l_neq_r in H0.
@@ -300,21 +300,21 @@ Proof.
   rewrite <- H2; assumption.  apply BDDcompare_1.  apply (new_xr_lt_x xr lr rr).
   assumption.  intro y.  rewrite y in H0.  elim H0; intro.  rewrite H1.
   apply BDDbounded_0.  rewrite H1.  apply BDDbounded_1.  exact BDD_OK_r.
-  rewrite BDDalloc_lemma_1.  rewrite (ad_eq_correct (snd BDDalloc)).  reflexivity.
+  rewrite BDDalloc_lemma_1.  rewrite (Neqb_correct (snd BDDalloc)).  reflexivity.
 Qed.
 
 Lemma BDDalloc_keeps_state_OK : BDDstate_OK (fst (fst BDDalloc)).
 Proof.
   intros.  split.  apply BDDalloc_zero.  split.  apply BDDalloc_one.  
   unfold in_dom in |- *.  intro.  rewrite (BDDalloc_lemma_1 a).
-  elim (sumbool_of_bool (ad_eq a (snd BDDalloc))).  intro y.  rewrite y.  intro.
-  rewrite (ad_eq_complete _ _ y).  apply BDDalloc_BDD_OK.  intro y.  rewrite y.
+  elim (sumbool_of_bool (Neqb a (snd BDDalloc))).  intro y.  rewrite y.  intro.
+  rewrite (Neqb_complete _ _ y).  apply BDDalloc_BDD_OK.  intro y.  rewrite y.
   elim (option_sum _ (MapGet _ (bs_of_cfg new_cfg) a)).  intro y0.
   elim y0; clear y0; intro.  elim x0; clear x0; intros x1 y0.
   elim y0; clear y0; intros l1 r1.  intro y0.  intro H.  unfold BDD_OK in |- *.
   cut
    (MapGet (BDDvar * (ad * ad)) (fst (fst BDDalloc)) a =
-    SOME _ (x1, (l1, r1))).
+    Some (x1, (l1, r1))).
   intro H0.  rewrite H0.  apply nodes_preserved_bounded with (bs := bs_of_cfg new_cfg).
   exact BDDalloc_preserves_nodes.  cut (BDD_OK (bs_of_cfg new_cfg) a).
   unfold BDD_OK in |- *.  rewrite y0.  intro; assumption.
@@ -325,39 +325,39 @@ Qed.
 
 Lemma BDDsharing_OK_1 :
  forall a : ad,
- MapGet _ (bs_of_cfg new_cfg) a = NONE _ ->
+ MapGet _ (bs_of_cfg new_cfg) a = None ->
  BDDsharing_OK (MapPut _ (bs_of_cfg new_cfg) a (x, (l, r)))
    (MapPut3 _ (share_of_cfg new_cfg) l r x a).
 Proof.
   intros.  split.  rewrite (MapPut3_semantics ad (share_of_cfg new_cfg) l r x l0 r0 x0 a).
-  elim (sumbool_of_bool (ad_eq l l0 && (ad_eq r r0 && ad_eq x x0))).
+  elim (sumbool_of_bool (Neqb l l0 && (Neqb r r0 && Neqb x x0))).
   intro y.  rewrite y.  intro H0.  injection H0; intro.  rewrite <- H1.
   rewrite
    (MapPut_semantics (BDDvar * (ad * ad)) (bs_of_cfg new_cfg) a (x, (l, r)) a)
    .
-  rewrite (ad_eq_correct a).  cut (ad_eq l l0 = true /\ ad_eq r r0 = true /\ ad_eq x x0 = true).
-  intro.  rewrite (ad_eq_complete _ _ (proj1 H2)).
-  rewrite (ad_eq_complete _ _ (proj1 (proj2 H2))).
-  rewrite (ad_eq_complete _ _ (proj2 (proj2 H2))).  reflexivity.
+  rewrite (Neqb_correct a).  cut (Neqb l l0 = true /\ Neqb r r0 = true /\ Neqb x x0 = true).
+  intro.  rewrite (Neqb_complete _ _ (proj1 H2)).
+  rewrite (Neqb_complete _ _ (proj1 (proj2 H2))).
+  rewrite (Neqb_complete _ _ (proj2 (proj2 H2))).  reflexivity.
   apply andb3_lemma.  assumption.  intro y.  rewrite y.
   rewrite
    (MapPut_semantics (BDDvar * (ad * ad)) (bs_of_cfg new_cfg) a 
       (x, (l, r)) a0).
-  elim (sumbool_of_bool (ad_eq a a0)).  intro y0.  intro H0.
-  rewrite <- (ad_eq_complete _ _ y0) in H0.  unfold share_of_cfg in H0.
+  elim (sumbool_of_bool (Neqb a a0)).  intro y0.  intro H0.
+  rewrite <- (Neqb_complete _ _ y0) in H0.  unfold share_of_cfg in H0.
   unfold bs_of_cfg in H.  rewrite (proj1 (proj1 (proj2 new_cfg_OK) x0 l0 r0 a) H0) in H.
   discriminate.  intros y0 H0.  rewrite y0.  unfold bs_of_cfg in |- *.  unfold share_of_cfg in H0.
   exact (proj1 (proj1 (proj2 new_cfg_OK) x0 l0 r0 a0) H0).  
   rewrite
    (MapPut_semantics (BDDvar * (ad * ad)) (bs_of_cfg new_cfg) a 
       (x, (l, r)) a0).
-  intro H0.  elim (sumbool_of_bool (ad_eq a a0)).  intro y.  rewrite y in H0.
+  intro H0.  elim (sumbool_of_bool (Neqb a a0)).  intro y.  rewrite y in H0.
   injection H0.  intros.  rewrite <- H1.  rewrite <- H2.  rewrite <- H3.
   rewrite (MapPut3_semantics ad (share_of_cfg new_cfg) l r x l r x a).
-  rewrite (ad_eq_correct l).  rewrite (ad_eq_correct r).  rewrite (ad_eq_correct x).
-  simpl in |- *.  rewrite (ad_eq_complete _ _ y).  reflexivity.  intro y.  rewrite y in H0.
+  rewrite (Neqb_correct l).  rewrite (Neqb_correct r).  rewrite (Neqb_correct x).
+  simpl in |- *.  rewrite (Neqb_complete _ _ y).  reflexivity.  intro y.  rewrite y in H0.
   rewrite (MapPut3_semantics ad (share_of_cfg new_cfg) l r x l0 r0 x0 a).
-  cut (ad_eq l l0 && (ad_eq r r0 && ad_eq x x0) = false).  intro.
+  cut (Neqb l l0 && (Neqb r r0 && Neqb x x0) = false).  intro.
   rewrite H1.  unfold share_of_cfg in |- *.  unfold bs_of_cfg in H0.
   exact (proj2 (proj1 (proj2 new_cfg_OK) x0 l0 r0 a0) H0).
   apply andb3_lemma_1.  cut ((x, (l, r)) <> (x0, (l0, r0))).  intro.  unfold not in |- *; intro.
@@ -378,17 +378,17 @@ Lemma BDDalloc_keeps_cnt_OK :
 Proof.
   unfold BDDalloc, cnt_OK in |- *.  rewrite (cfg_comp new_cfg).
   elim (list_sum _ (fl_of_cfg new_cfg)).  intro.  rewrite H.  simpl in |- *.  split.
-  apply ad_le_trans with (b := cnt_of_cfg new_cfg).  unfold cnt_of_cfg in |- *.
+  apply Nle_trans with (b := cnt_of_cfg new_cfg).  unfold cnt_of_cfg in |- *.
   exact (proj1 (proj1 (proj2 (proj2 (proj2 new_cfg_OK))))).
-  unfold ad_le in |- *.  apply nat_le_correct.  rewrite (ad_S_is_S (cnt_of_cfg new_cfg)).
+  unfold Nle in |- *.  apply leb_correct.  rewrite (ad_S_is_S (cnt_of_cfg new_cfg)).
   apply le_S.  apply le_n.  intros.
   rewrite
    (MapPut_semantics (BDDvar * (ad * ad)) (bs_of_cfg new_cfg)
       (cnt_of_cfg new_cfg) (x, (l, r)) a).
-  replace (ad_eq (cnt_of_cfg new_cfg) a) with false.
+  replace (Neqb (cnt_of_cfg new_cfg) a) with false.
   refine (proj2 (proj1 (proj2 (proj2 (proj2 new_cfg_OK)))) a _).
-  apply ad_le_trans with (b := ad_S (cnt_of_cfg new_cfg)).  unfold ad_le in |- *.
-  apply nat_le_correct.  rewrite (ad_S_is_S (cnt_of_cfg new_cfg)).
+  apply Nle_trans with (b := ad_S (cnt_of_cfg new_cfg)).  unfold Nle in |- *.
+  apply leb_correct.  rewrite (ad_S_is_S (cnt_of_cfg new_cfg)).
   apply le_S.  apply le_n.  assumption.  symmetry  in |- *.  apply ad_S_le_then_neq.
   assumption.  intro.  elim H; clear H; intros.  elim H; clear H; intros.
   rewrite H.  simpl in |- *.  split.
@@ -396,9 +396,9 @@ Proof.
   intros.  rewrite
    (MapPut_semantics (BDDvar * (ad * ad)) (bs_of_cfg new_cfg) x0 
       (x, (l, r)) a).
-  cut (ad_eq x0 a = false).  intro; rewrite H1.
+  cut (Neqb x0 a = false).  intro; rewrite H1.
   apply (proj2 (proj1 (proj2 (proj2 (proj2 new_cfg_OK))))).
-  exact H0.  apply ad_S_le_then_neq.  apply ad_le_trans with (b := cnt_of_cfg new_cfg).
+  exact H0.  apply ad_S_le_then_neq.  apply Nle_trans with (b := cnt_of_cfg new_cfg).
   unfold cnt_of_cfg in |- *.  refine
    (proj1 (proj2 (proj1 (proj2 (proj1 (proj2 (proj2 new_cfg_OK))) x0) _))).
   unfold fl_of_cfg in H.  rewrite H.  simpl in |- *.  left; reflexivity.  assumption.
@@ -414,37 +414,38 @@ Proof.
    (MapPut_semantics (BDDvar * (ad * ad)) (bs_of_cfg new_cfg)
       (cnt_of_cfg new_cfg) (x, (l, r)) node).
   split.  simpl in |- *.  tauto.  intro.  elim H0; clear H0; intros.
-  elim H1; clear H1; intros.  elim (sumbool_of_bool (ad_eq (cnt_of_cfg new_cfg) node)).
+  elim H1; clear H1; intros.  elim (sumbool_of_bool (Neqb (cnt_of_cfg new_cfg) node)).
   intro y.  rewrite y in H2.  discriminate.  intro y.  rewrite y in H2.
   absurd (In node (fl_of_cfg new_cfg)).  rewrite H.  simpl in |- *.  tauto.  
   apply (proj2 (proj2 (proj1 (proj2 (proj2 new_cfg_OK))) node)).
-  split.  assumption.  split.  unfold ad_le in |- *.  apply nat_le_correct.
+  split.  assumption.  split.  unfold Nle in |- *.  apply leb_correct.
   rewrite (ad_S_is_S node).  apply lt_le_S.
-  cut (nat_of_ad node <= nat_of_ad (cnt_of_cfg new_cfg)).  intro.
+  cut (nat_of_N node <= nat_of_N (cnt_of_cfg new_cfg)).  intro.
   elim (le_lt_or_eq _ _ H3).  tauto.  intro.  unfold cnt_of_cfg in y.
   cut (node = fst (snd (snd (snd new_cfg)))).  intro.  rewrite H5 in y.
-  rewrite (ad_eq_correct (fst (snd (snd (snd new_cfg))))) in y.  discriminate.
-  rewrite <- (ad_of_nat_of_ad node).  rewrite H4.  apply ad_of_nat_of_ad.  
+  rewrite (Neqb_correct (fst (snd (snd (snd new_cfg))))) in y.  discriminate.
+  rewrite <- (N_of_nat_of_N node).  rewrite H4.  apply N_of_nat_of_N.  
   apply le_S_n.  rewrite <- (ad_S_is_S node).
-  rewrite <- (ad_S_is_S (cnt_of_cfg new_cfg)).  unfold ad_le in H1.
-  apply nat_le_complete.  assumption.  assumption.  intro.
+  rewrite <- (ad_S_is_S (cnt_of_cfg new_cfg)).  unfold Nle in H1.
+  apply leb_complete.  assumption.  assumption.  intro.
   elim H; clear H; intros.  elim H; clear H; intros.  rewrite H.  simpl in |- *.
   unfold BDDfree_list_OK in |- *.  split.  apply no_dup_cons_no_dup with (a := x0).
+  unfold ad in *.
   rewrite <- H.  unfold fl_of_cfg in |- *.  exact (proj1 (proj1 (proj2 (proj2 new_cfg_OK)))).
   cut (~ In x0 x1).  intro.  intro.
   rewrite
    (MapPut_semantics (BDDvar * (ad * ad)) (bs_of_cfg new_cfg) x0 
       (x, (l, r)) node).
-  split.  intro.  elim (sumbool_of_bool (ad_eq x0 node)).  intro y.
-  absurd (In node x1).  rewrite <- (ad_eq_complete _ _ y).  assumption.
+  split.  intro.  elim (sumbool_of_bool (Neqb x0 node)).  intro y.
+  absurd (In node x1).  rewrite <- (Neqb_complete _ _ y).  assumption.
   assumption.  intro y.
   rewrite y.  apply (proj1 (proj2 (proj1 (proj2 (proj2 new_cfg_OK))) node)).
   unfold fl_of_cfg in H.  rewrite H.  apply in_cons.  assumption.  intros.
-  elim (sumbool_of_bool (ad_eq x0 node)).  intro y.  rewrite y in H1.
+  elim (sumbool_of_bool (Neqb x0 node)).  intro y.  rewrite y in H1.
   elim H1; intros.  elim H3; intros.  discriminate.  intro y.
   rewrite y in H1.  unfold bs_of_cfg in H1.  cut (In node (fst (snd (snd new_cfg)))).
   unfold fl_of_cfg in H.  rewrite H.  intro.  elim (in_inv H2).  intro.
-  rewrite H3 in y.  rewrite (ad_eq_correct node) in y.  discriminate.  tauto.
+  rewrite H3 in y.  rewrite (Neqb_correct node) in y.  discriminate.  tauto.
   apply (proj2 (proj2 (proj1 (proj2 (proj2 new_cfg_OK))) node)).
   assumption.  apply no_dup_cons_no_in.  rewrite <- H.  unfold fl_of_cfg in |- *.
   exact (proj1 (proj1 (proj2 (proj2 new_cfg_OK)))).
@@ -516,10 +517,10 @@ Proof.
 Qed.
 
 Lemma BDDallocGet :
- MapGet _ (fst (fst BDDalloc)) (snd BDDalloc) = SOME _ (x, (l, r)).
+ MapGet _ (fst (fst BDDalloc)) (snd BDDalloc) = Some (x, (l, r)).
 Proof.
   rewrite (BDDalloc_lemma_1 (snd BDDalloc)).
-  rewrite (ad_eq_correct (snd BDDalloc)).  reflexivity.
+  rewrite (Neqb_correct (snd BDDalloc)).  reflexivity.
 Qed.
 
 End BDD_alloc.

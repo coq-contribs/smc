@@ -17,7 +17,7 @@
 Require Export Bool.
 Require Export Sumbool.
 Require Export Arith.
-Require Export ZArith.
+Require Export ZArith NArith Nnat Ndec Ndigits.
 Require Export Map.
 Require Export Allmaps.
 Require Export Wf_nat.

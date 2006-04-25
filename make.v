@@ -17,7 +17,7 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
+Require Import ZArith NArith Nnat Ndec Ndigits.
 Require Import Map.
 Require Import Allmaps.
 Require Import List.
@@ -48,19 +48,19 @@ Hypothesis r_used' : used_node' cfg ul r.
 Hypothesis
   xl_lt_x :
     forall (xl : BDDvar) (ll rl : ad),
-    MapGet _ (bs_of_cfg cfg) l = SOME _ (xl, (ll, rl)) ->
+    MapGet _ (bs_of_cfg cfg) l = Some (xl, (ll, rl)) ->
     BDDcompare xl x = Datatypes.Lt.
 Hypothesis
   xr_lt_x :
     forall (xr : BDDvar) (lr rr : ad),
-    MapGet _ (bs_of_cfg cfg) r = SOME _ (xr, (lr, rr)) ->
+    MapGet _ (bs_of_cfg cfg) r = Some (xr, (lr, rr)) ->
     BDDcompare xr x = Datatypes.Lt.
 
 Lemma no_dup :
- MapGet3 ad (fst (snd cfg)) l r x = NONE ad ->
+ MapGet3 ad (fst (snd cfg)) l r x = None ->
  forall (x' : BDDvar) (l' r' a : ad),
  MapGet (BDDvar * (ad * ad)) (bs_of_cfg cfg) a =
- SOME (BDDvar * (ad * ad)) (x', (l', r')) -> (x, (l, r)) <> (x', (l', r')).
+ Some (x', (l', r')) -> (x, (l, r)) <> (x', (l', r')).
 Proof.
   unfold not in |- *.  intros.  injection H1.  intros.  rewrite <- H2 in H0.
   rewrite <- H3 in H0.  rewrite <- H4 in H0.
@@ -69,17 +69,17 @@ Proof.
 Qed.
 
 Definition BDDmake :=
-  if ad_eq l r
+  if Neqb l r
   then (cfg, l)
   else
    match MapGet3 _ (fst (snd cfg)) l r x with
-   | SOME y => (cfg, y)
-   | NONE => BDDalloc gc cfg x l r ul
+   | Some y => (cfg, y)
+   | None => BDDalloc gc cfg x l r ul
    end.
 
 Lemma BDDmake_keeps_config_OK : BDDconfig_OK (fst BDDmake).
 Proof.
-  unfold BDDmake in |- *.  elim (sumbool_of_bool (ad_eq l r)).  intro y.  rewrite y.
+  unfold BDDmake in |- *.  elim (sumbool_of_bool (Neqb l r)).  intro y.  rewrite y.
   assumption.  intro y.  rewrite y.
   elim (option_sum _ (MapGet3 ad (fst (snd cfg)) l r x)).  intro y0.  elim y0.
   clear y0.  intros node y0.  rewrite y0.  assumption.  intro y0.  rewrite y0.
@@ -91,7 +91,7 @@ Qed.
 Lemma BDDmake_preserves_used_nodes :
  used_nodes_preserved cfg (fst BDDmake) ul.
 Proof.
-  unfold BDDmake in |- *.  elim (sumbool_of_bool (ad_eq l r)).  intro y.  rewrite y.
+  unfold BDDmake in |- *.  elim (sumbool_of_bool (Neqb l r)).  intro y.  rewrite y.
   apply used_nodes_preserved_refl.  intro y.  rewrite y.
   elim (option_sum _ (MapGet3 ad (fst (snd cfg)) l r x)).  intro y0.  elim y0.
   clear y0.  intros node y0.  rewrite y0.  apply used_nodes_preserved_refl.  intro y0.
@@ -101,7 +101,7 @@ Qed.
 
 Lemma BDDmake_node_OK : config_node_OK (fst BDDmake) (snd BDDmake).
 Proof.
-  unfold BDDmake in |- *.  elim (sumbool_of_bool (ad_eq l r)).  intro y.  rewrite y.
+  unfold BDDmake in |- *.  elim (sumbool_of_bool (Neqb l r)).  intro y.  rewrite y.
   unfold config_node_OK in |- *.  apply used_node'_OK_bs with (ul := ul).
   exact (proj1 cfg_OK).  assumption.  assumption.  intro y.  rewrite y.
   elim (option_sum _ (MapGet3 ad (fst (snd cfg)) l r x)).  intro y0.  elim y0.
@@ -115,9 +115,9 @@ Lemma BDDmake_bool_fun :
  bool_fun_eq (bool_fun_of_BDD (fst BDDmake) (snd BDDmake))
    (bool_fun_if x (bool_fun_of_BDD cfg r) (bool_fun_of_BDD cfg l)).
 Proof.
-  unfold BDDmake in |- *.  elim (sumbool_of_bool (ad_eq l r)).  intro y.  rewrite y.
+  unfold BDDmake in |- *.  elim (sumbool_of_bool (Neqb l r)).  intro y.  rewrite y.
   simpl in |- *.  apply bool_fun_eq_sym.  apply bool_fun_if_eq_2.
-  rewrite (ad_eq_complete _ _ y).  apply bool_fun_eq_refl.  intro y.  rewrite y.
+  rewrite (Neqb_complete _ _ y).  apply bool_fun_eq_refl.  intro y.  rewrite y.
   elim (option_sum _ (MapGet3 ad (fst (snd cfg)) l r x)).  intro y0.  elim y0.
   clear y0.  intros x0 y0.  rewrite y0.  unfold bool_fun_of_BDD in |- *.  simpl in |- *.
   apply bool_fun_of_BDD_bs_int.  exact (proj1 cfg_OK).  
@@ -147,38 +147,38 @@ Proof.
 Qed.
 
 Lemma BDDmake_node_height_eq :
- ad_eq l r = false ->
- ad_eq (node_height (fst BDDmake) (snd BDDmake)) (ad_S x) = true.
+ Neqb l r = false ->
+ Neqb (node_height (fst BDDmake) (snd BDDmake)) (ad_S x) = true.
 Proof.
   intro.  unfold BDDmake in |- *.  rewrite H.
   elim (option_sum _ (MapGet3 ad (fst (snd cfg)) l r x)).  intro y.  elim y.
   clear y.  intros x0 y.  rewrite y.  simpl in |- *.  unfold node_height in |- *.  unfold bs_node_height in |- *.
   rewrite (proj1 (proj1 (proj2 cfg_OK) x l r x0) y).
-  apply ad_eq_correct.  intro y.  rewrite y.  unfold node_height in |- *.  unfold bs_node_height in |- *.
-  rewrite (BDDallocGet gc cfg x l r ul).  apply ad_eq_correct.
+  apply Neqb_correct.  intro y.  rewrite y.  unfold node_height in |- *.  unfold bs_node_height in |- *.
+  rewrite (BDDallocGet gc cfg x l r ul).  apply Neqb_correct.
 Qed.
 
 Lemma BDDmake_node_height_eq_1 :
- ad_eq l r = true ->
- ad_eq (node_height (fst BDDmake) (snd BDDmake)) (node_height cfg l) = true.
+ Neqb l r = true ->
+ Neqb (node_height (fst BDDmake) (snd BDDmake)) (node_height cfg l) = true.
 Proof.
-  intro.  unfold BDDmake in |- *.  rewrite H.  apply ad_eq_correct.
+  intro.  unfold BDDmake in |- *.  rewrite H.  apply Neqb_correct.
 Qed.
 
 Lemma BDDmake_node_height_le :
- ad_le (node_height (fst BDDmake) (snd BDDmake)) (ad_S x) = true.
+ Nle (node_height (fst BDDmake) (snd BDDmake)) (ad_S x) = true.
 Proof.
-  elim (sumbool_of_bool (ad_eq l r)).  intro y.
+  elim (sumbool_of_bool (Neqb l r)).  intro y.
   rewrite
-   (ad_eq_complete (node_height (fst BDDmake) (snd BDDmake))
+   (Neqb_complete (node_height (fst BDDmake) (snd BDDmake))
       (node_height cfg l)).
   unfold node_height in |- *.  unfold bs_node_height in |- *.  elim (option_sum _ (MapGet _ (fst cfg) l)).
   intro y0.  elim y0.  intro x0.  elim x0.  intro y1.  intro y2.  elim y2.  intros y3 y4 y5.
-  rewrite y5.  unfold ad_le in |- *.  apply nat_le_correct.  apply lt_le_weak.
+  rewrite y5.  unfold Nle in |- *.  apply leb_correct.  apply lt_le_weak.
   apply BDDcompare_lt.  rewrite <- (ad_S_compare y1 x).
   apply xl_lt_x with (ll := y3) (rl := y4).  assumption.  intro y0.  rewrite y0.
   reflexivity.  apply BDDmake_node_height_eq_1.  assumption.  intro y.
-  rewrite (ad_eq_complete _ _ (BDDmake_node_height_eq y)).  apply ad_le_refl.
+  rewrite (Neqb_complete _ _ (BDDmake_node_height_eq y)).  apply Nle_refl.
 Qed.
 
 End BDD_make.

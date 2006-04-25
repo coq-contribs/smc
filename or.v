@@ -17,7 +17,7 @@
 Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
-Require Import ZArith.
+Require Import ZArith NArith Nnat Ndec Ndigits.
 Require Import Map.
 Require Import Allmaps.
 Require Import List.
@@ -41,20 +41,20 @@ Fixpoint BDDor_1 (cfg : BDDconfig) (ul : list ad) (node1 node2 : ad)
   | O => (* Error *)  (initBDDconfig, BDDzero)
   | S bound' =>
       match MapGet2 _ (orm_of_cfg cfg) node1 node2 with
-      | SOME node' => (cfg, node')
-      | NONE =>
+      | Some node' => (cfg, node')
+      | None =>
           match MapGet _ (fst cfg) node1 with
-          | NONE =>
-              if ad_eq node1 BDDzero
+          | None =>
+              if Neqb node1 BDDzero
               then (BDDor_memo_put cfg node1 node2 node2, node2)
               else (BDDor_memo_put cfg node1 node2 node1, node1)
-          | SOME (x1, (l1, r1)) =>
+          | Some (x1, (l1, r1)) =>
               match MapGet _ (fst cfg) node2 with
-              | NONE =>
-                  if ad_eq node2 BDDzero
+              | None =>
+                  if Neqb node2 BDDzero
                   then (BDDor_memo_put cfg node1 node2 node1, node1)
                   else (BDDor_memo_put cfg node1 node2 node2, node2)
-              | SOME (x2, (l2, r2)) =>
+              | Some (x2, (l2, r2)) =>
                   match BDDcompare x1 x2 with
                   | Datatypes.Eq =>
                       match BDDor_1 cfg ul l1 l2 bound' with
@@ -113,7 +113,7 @@ Fixpoint BDDor_1 (cfg : BDDconfig) (ul : list ad) (node1 node2 : ad)
 
 Lemma BDDor_1_lemma :
  forall (bound : nat) (cfg : BDDconfig) (ul : list ad) (node1 node2 : ad),
- max (nat_of_ad (node_height cfg node1)) (nat_of_ad (node_height cfg node2)) <
+ max (nat_of_N (node_height cfg node1)) (nat_of_N (node_height cfg node2)) <
  bound ->
  BDDconfig_OK cfg ->
  used_list_OK cfg ul ->
@@ -123,7 +123,7 @@ Lemma BDDor_1_lemma :
  config_node_OK (fst (BDDor_1 cfg ul node1 node2 bound))
    (snd (BDDor_1 cfg ul node1 node2 bound)) /\
  used_nodes_preserved cfg (fst (BDDor_1 cfg ul node1 node2 bound)) ul /\
- ad_le
+ Nle
    (node_height (fst (BDDor_1 cfg ul node1 node2 bound))
       (snd (BDDor_1 cfg ul node1 node2 bound)))
    (BDDvar_max (node_height cfg node1) (node_height cfg node2)) = true /\
@@ -134,8 +134,8 @@ Lemma BDDor_1_lemma :
 Proof.
   simple induction bound.  intros.
   absurd
-   (max (nat_of_ad (node_height cfg node1))
-      (nat_of_ad (node_height cfg node2)) < 0).
+   (max (nat_of_N (node_height cfg node1))
+      (nat_of_N (node_height cfg node2)) < 0).
   apply lt_n_O.  assumption.  simpl in |- *.  intros.
   elim (option_sum _ (MapGet2 ad (orm_of_cfg cfg) node1 node2)).  intro y.
   elim y; clear y; intros node' H5.  rewrite H5.  simpl in |- *.
@@ -162,7 +162,7 @@ Proof.
    (BDDconfig_OK cfgl /\
     config_node_OK cfgl nodel /\
     used_nodes_preserved cfg cfgl ul /\
-    ad_le (node_height cfgl nodel)
+    Nle (node_height cfgl nodel)
       (BDDvar_max (node_height cfg l1) (node_height cfg l2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgl nodel)
       (bool_fun_or (bool_fun_of_BDD cfg l1) (bool_fun_of_BDD cfg l2))).
@@ -175,7 +175,7 @@ Proof.
    (BDDconfig_OK cfgr /\
     config_node_OK cfgr noder /\
     used_nodes_preserved cfgl cfgr (nodel :: ul) /\
-    ad_le (node_height cfgr noder)
+    Nle (node_height cfgr noder)
       (BDDvar_max (node_height cfgl r1) (node_height cfgl r2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgr noder)
       (bool_fun_or (bool_fun_of_BDD cfgl r1) (bool_fun_of_BDD cfgl r2))).
@@ -189,11 +189,11 @@ Proof.
   cut (used_node' cfgr (noder :: nodel :: ul) noder).  intros.
   cut
    (forall (xl : BDDvar) (ll rl : ad),
-    MapGet _ (fst cfgr) nodel = SOME _ (xl, (ll, rl)) ->
+    MapGet _ (fst cfgr) nodel = Some (xl, (ll, rl)) ->
     BDDcompare xl x1 = Datatypes.Lt).
   cut
    (forall (xr : BDDvar) (lr rr : ad),
-    MapGet _ (fst cfgr) noder = SOME _ (xr, (lr, rr)) ->
+    MapGet _ (fst cfgr) noder = Some (xr, (lr, rr)) ->
     BDDcompare xr x1 = Datatypes.Lt).
   intros.  cut (BDDconfig_OK cfg').
   cut (used_nodes_preserved cfgr cfg' (noder :: nodel :: ul)).
@@ -202,7 +202,7 @@ Proof.
    (bool_fun_eq (bool_fun_of_BDD cfg' node')
       (bool_fun_if x1 (bool_fun_of_BDD cfgr noder)
          (bool_fun_of_BDD cfgr nodel))).
-  cut (ad_le (node_height cfg' node') (ad_S x1) = true).  intros.
+  cut (Nle (node_height cfg' node') (ad_S x1) = true).  intros.
   cut (config_node_OK cfg' node1).  cut (config_node_OK cfg' node2).  intros.
   cut (nodes_preserved cfg' (BDDor_memo_put cfg' node1 node2 node')).  intro.
   cut (BDDconfig_OK (BDDor_memo_put cfg' node1 node2 node')).  intro.  split.
@@ -216,11 +216,11 @@ Proof.
   apply used_nodes_preserved_cons with (node := noder).  assumption.
   apply nodes_preserved_used_nodes_preserved.  assumption.  
   rewrite
-   (ad_eq_complete
+   (Neqb_complete
       (node_height (BDDor_memo_put cfg' node1 node2 node') node')
       (node_height cfg' node')).
   split.  unfold node_height at 2 3 in |- *.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
-  rewrite <- (BDD_EGAL_complete _ _ y0).  apply ad_le_trans with (b := ad_S x1).
+  rewrite <- (BDD_EGAL_complete _ _ y0).  apply Nle_trans with (b := ad_S x1).
   assumption.  apply BDDvar_le_max_1.
   apply bool_fun_eq_trans with (bf2 := bool_fun_of_BDD cfg' node').
   apply nodes_preserved_bool_fun.  assumption.  assumption.  assumption.  
@@ -264,10 +264,10 @@ Proof.
   apply bool_fun_or_orthogonal.  apply nodes_preserved_node_height_eq.  assumption.
   assumption.  assumption.  assumption.  apply BDDorm_put_OK.  assumption.
   assumption.  assumption.  assumption.  
-  rewrite (ad_eq_complete (node_height cfg' node1) (node_height cfg node1)).
-  rewrite (ad_eq_complete (node_height cfg' node2) (node_height cfg node2)).
+  rewrite (Neqb_complete (node_height cfg' node1) (node_height cfg node1)).
+  rewrite (Neqb_complete (node_height cfg' node2) (node_height cfg node2)).
   unfold node_height at 2 3 in |- *.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
-  apply ad_le_trans with (b := ad_S x1).  assumption.
+  apply Nle_trans with (b := ad_S x1).  assumption.
   rewrite (BDD_EGAL_complete _ _ y0).  apply BDDvar_le_max_1.  
   apply used_nodes_preserved'_node_height_eq with (ul := ul).  assumption.  assumption.
   apply used_nodes_preserved_trans with (cfg2 := cfgl).  assumption.  assumption.
@@ -379,13 +379,13 @@ Proof.
   apply
    le_lt_trans
     with
-      (m := nat_of_ad
+      (m := nat_of_N
               (BDDvar_max (node_height cfgl r1) (node_height cfgl r2))).
-  apply nat_le_complete.  assumption.  
-  rewrite (ad_eq_complete (node_height cfgl r1) (node_height cfg r1)).
-  rewrite (ad_eq_complete (node_height cfgl r2) (node_height cfg r2)).
+  apply leb_complete.  assumption.  
+  rewrite (Neqb_complete (node_height cfgl r1) (node_height cfg r1)).
+  rewrite (Neqb_complete (node_height cfgl r2) (node_height cfg r2)).
   rewrite (BDDvar_max_max (node_height cfg r1) (node_height cfg r2)).
-  rewrite <- (max_x_x_eq_x (nat_of_ad (node_height cfg node1))).  apply lt_max_1.
+  rewrite <- (max_x_x_eq_x (nat_of_N (node_height cfg node1))).  apply lt_max_1.
   apply BDDcompare_lt.  unfold node_height in |- *.  apply bs_node_height_right with (x := x1) (l := l1).
   exact (proj1 H1).  assumption.  apply BDDcompare_lt.
   replace (node_height cfg node1) with (node_height cfg node2).  unfold node_height in |- *.
@@ -400,15 +400,15 @@ Proof.
   reflexivity.  intros.  rewrite (ad_S_compare xl x1).
   replace (ad_S xl) with (node_height cfgr nodel).
   replace (ad_S x1) with (node_height cfg node1).
-  rewrite (ad_eq_complete (node_height cfgr nodel) (node_height cfgl nodel)).
+  rewrite (Neqb_complete (node_height cfgr nodel) (node_height cfgl nodel)).
   apply BDDlt_compare.
   apply
    le_lt_trans
     with
-      (m := nat_of_ad (BDDvar_max (node_height cfg l1) (node_height cfg l2))).
-  apply nat_le_complete.  assumption.
+      (m := nat_of_N (BDDvar_max (node_height cfg l1) (node_height cfg l2))).
+  apply leb_complete.  assumption.
   rewrite (BDDvar_max_max (node_height cfg l1) (node_height cfg l2)).
-  rewrite <- (max_x_x_eq_x (nat_of_ad (node_height cfg node1))).  apply lt_max_1.
+  rewrite <- (max_x_x_eq_x (nat_of_N (node_height cfg node1))).  apply lt_max_1.
   apply BDDcompare_lt.  unfold node_height in |- *.  apply bs_node_height_left with (x := x1) (r := r1).
   exact (proj1 H1).  assumption.  apply BDDcompare_lt.
   replace (node_height cfg node1) with (node_height cfg node2).  unfold node_height in |- *.
@@ -427,14 +427,14 @@ Proof.
   apply
    lt_trans_1
     with
-      (y := max (nat_of_ad (node_height cfg node1))
-              (nat_of_ad (node_height cfg node2))).
-  apply lt_max_1.  rewrite (ad_eq_complete (node_height cfgl r1) (node_height cfg r1)).
+      (y := max (nat_of_N (node_height cfg node1))
+              (nat_of_N (node_height cfg node2))).
+  apply lt_max_1.  rewrite (Neqb_complete (node_height cfgl r1) (node_height cfg r1)).
   unfold node_height in |- *.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x1) (l := l1).
   exact (proj1 H1).  assumption.
   apply used_nodes_preserved'_node_height_eq with (ul := ul).  assumption.  assumption.
   assumption.  assumption.  assumption.
-  rewrite (ad_eq_complete (node_height cfgl r2) (node_height cfg r2)).
+  rewrite (Neqb_complete (node_height cfgl r2) (node_height cfg r2)).
   replace (node_height cfg node1) with (node_height cfg node2).  apply BDDcompare_lt.
   unfold node_height in |- *.  apply bs_node_height_right with (x := x2) (l := l2).  exact (proj1 H1).
   assumption.  unfold node_height in |- *.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
@@ -454,8 +454,8 @@ Proof.
   apply
    lt_trans_1
     with
-      (y := max (nat_of_ad (node_height cfg node1))
-              (nat_of_ad (node_height cfg node2))).
+      (y := max (nat_of_N (node_height cfg node1))
+              (nat_of_N (node_height cfg node2))).
   apply lt_max_1.  unfold node_height in |- *.  apply BDDcompare_lt.
   apply bs_node_height_left with (x := x1) (r := r1).  exact (proj1 H1).  assumption.
   replace (node_height cfg node1) with (node_height cfg node2).  apply BDDcompare_lt.
@@ -480,7 +480,7 @@ Proof.
    (BDDconfig_OK cfgl /\
     config_node_OK cfgl nodel /\
     used_nodes_preserved cfg cfgl ul /\
-    ad_le (node_height cfgl nodel)
+    Nle (node_height cfgl nodel)
       (BDDvar_max (node_height cfg node1) (node_height cfg l2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgl nodel)
       (bool_fun_or (bool_fun_of_BDD cfg node1) (bool_fun_of_BDD cfg l2))).
@@ -495,7 +495,7 @@ Proof.
    (BDDconfig_OK cfgr /\
     config_node_OK cfgr noder /\
     used_nodes_preserved cfgl cfgr (nodel :: ul) /\
-    ad_le (node_height cfgr noder)
+    Nle (node_height cfgr noder)
       (BDDvar_max (node_height cfgl node1) (node_height cfgl r2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgr noder)
       (bool_fun_or (bool_fun_of_BDD cfgl node1) (bool_fun_of_BDD cfgl r2))).
@@ -509,11 +509,11 @@ Proof.
   cut (used_node' cfgr (noder :: nodel :: ul) noder).  intros.
   cut
    (forall (xl : BDDvar) (ll rl : ad),
-    MapGet _ (fst cfgr) nodel = SOME _ (xl, (ll, rl)) ->
+    MapGet _ (fst cfgr) nodel = Some (xl, (ll, rl)) ->
     BDDcompare xl x2 = Datatypes.Lt).
   cut
    (forall (xr : BDDvar) (lr rr : ad),
-    MapGet _ (fst cfgr) noder = SOME _ (xr, (lr, rr)) ->
+    MapGet _ (fst cfgr) noder = Some (xr, (lr, rr)) ->
     BDDcompare xr x2 = Datatypes.Lt).
   intros.  cut (BDDconfig_OK cfg').
   cut (used_nodes_preserved cfgr cfg' (noder :: nodel :: ul)).
@@ -522,7 +522,7 @@ Proof.
    (bool_fun_eq (bool_fun_of_BDD cfg' node')
       (bool_fun_if x2 (bool_fun_of_BDD cfgr noder)
          (bool_fun_of_BDD cfgr nodel))).
-  cut (ad_le (node_height cfg' node') (ad_S x2) = true).  intros.
+  cut (Nle (node_height cfg' node') (ad_S x2) = true).  intros.
   cut (config_node_OK cfg' node1).  cut (config_node_OK cfg' node2).  intros.
   cut (nodes_preserved cfg' (BDDor_memo_put cfg' node1 node2 node')).  intro.
   cut (BDDconfig_OK (BDDor_memo_put cfg' node1 node2 node')).  intro.  split.
@@ -536,7 +536,7 @@ Proof.
   apply used_nodes_preserved_cons with (node := noder).  assumption.  
   apply nodes_preserved_used_nodes_preserved.  assumption.  
   rewrite
-   (ad_eq_complete
+   (Neqb_complete
       (node_height (BDDor_memo_put cfg' node1 node2 node') node')
       (node_height cfg' node')).
   split.  unfold node_height at 2 3 in |- *.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
@@ -582,8 +582,8 @@ Proof.
   apply bool_fun_or_orthogonal_right.  apply nodes_preserved_node_height_eq.
   assumption.  assumption.  assumption.  assumption.  apply BDDorm_put_OK.
   assumption.  assumption.  assumption.  assumption.  
-  rewrite (ad_eq_complete (node_height cfg' node1) (node_height cfg node1)).
-  rewrite (ad_eq_complete (node_height cfg' node2) (node_height cfg node2)).
+  rewrite (Neqb_complete (node_height cfg' node1) (node_height cfg node1)).
+  rewrite (Neqb_complete (node_height cfg' node2) (node_height cfg node2)).
   unfold node_height at 2 3 in |- *.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
   rewrite (BDDvar_max_inf (ad_S x1) (ad_S x2)).  assumption.
   rewrite <- (ad_S_compare x1 x2).  assumption.
@@ -693,13 +693,13 @@ Proof.
   apply
    le_lt_trans
     with
-      (m := nat_of_ad
+      (m := nat_of_N
               (BDDvar_max (node_height cfgl node1) (node_height cfgl r2))).
-  apply nat_le_complete.  assumption.
-  rewrite (ad_eq_complete (node_height cfgl node1) (node_height cfg node1)).
-  rewrite (ad_eq_complete (node_height cfgl r2) (node_height cfg r2)).
+  apply leb_complete.  assumption.
+  rewrite (Neqb_complete (node_height cfgl node1) (node_height cfg node1)).
+  rewrite (Neqb_complete (node_height cfgl r2) (node_height cfg r2)).
   rewrite (BDDvar_max_max (node_height cfg node1) (node_height cfg r2)).
-  rewrite <- (max_x_x_eq_x (nat_of_ad (node_height cfg node2))).  apply lt_max_1.
+  rewrite <- (max_x_x_eq_x (nat_of_N (node_height cfg node2))).  apply lt_max_1.
   apply BDDcompare_lt.  unfold node_height in |- *.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
   rewrite <- (ad_S_compare x1 x2).  assumption.  apply BDDcompare_lt.
   unfold node_height in |- *.  apply bs_node_height_right with (x := x2) (l := l2).  exact (proj1 H1).  
@@ -711,16 +711,16 @@ Proof.
   reflexivity.  intros.  rewrite (ad_S_compare xl x2).
   replace (ad_S xl) with (node_height cfgr nodel).
   replace (ad_S x2) with (node_height cfg node2).
-  rewrite (ad_eq_complete (node_height cfgr nodel) (node_height cfgl nodel)).
+  rewrite (Neqb_complete (node_height cfgr nodel) (node_height cfgl nodel)).
   apply BDDlt_compare.
   apply
    le_lt_trans
     with
-      (m := nat_of_ad
+      (m := nat_of_N
               (BDDvar_max (node_height cfg node1) (node_height cfg l2))).
-  apply nat_le_complete.  assumption.
+  apply leb_complete.  assumption.
   rewrite (BDDvar_max_max (node_height cfg node1) (node_height cfg l2)).
-  rewrite <- (max_x_x_eq_x (nat_of_ad (node_height cfg node2))).  apply lt_max_1.
+  rewrite <- (max_x_x_eq_x (nat_of_N (node_height cfg node2))).  apply lt_max_1.
   apply BDDcompare_lt.  unfold node_height in |- *.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
   rewrite <- (ad_S_compare x1 x2).  assumption.  apply BDDcompare_lt.
   unfold node_height in |- *.  apply bs_node_height_left with (x := x2) (r := r2).  exact (proj1 H1).
@@ -736,17 +736,17 @@ Proof.
   apply
    lt_trans_1
     with
-      (y := max (nat_of_ad (node_height cfg node1))
-              (nat_of_ad (node_height cfg node2))).
+      (y := max (nat_of_N (node_height cfg node1))
+              (nat_of_N (node_height cfg node2))).
   rewrite <- (BDDvar_max_max (node_height cfg node1) (node_height cfg node2)).
   rewrite (BDDvar_max_inf (node_height cfg node1) (node_height cfg node2)).
-  rewrite <- (max_x_x_eq_x (nat_of_ad (node_height cfg node2))).  apply lt_max_1.
-  rewrite (ad_eq_complete (node_height cfgl node1) (node_height cfg node1)).  unfold node_height in |- *.
+  rewrite <- (max_x_x_eq_x (nat_of_N (node_height cfg node2))).  apply lt_max_1.
+  rewrite (Neqb_complete (node_height cfgl node1) (node_height cfg node1)).  unfold node_height in |- *.
   apply BDDcompare_lt.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
   rewrite <- (ad_S_compare x1 x2).  assumption.
   apply used_nodes_preserved'_node_height_eq with (ul := ul).  assumption.  assumption.
   assumption.  assumption.  assumption.
-  rewrite (ad_eq_complete (node_height cfgl r2) (node_height cfg r2)).  apply BDDcompare_lt.
+  rewrite (Neqb_complete (node_height cfgl r2) (node_height cfg r2)).  apply BDDcompare_lt.
   unfold node_height in |- *.  apply bs_node_height_right with (x := x2) (l := l2).  exact (proj1 H1).
   assumption.  apply used_nodes_preserved'_node_height_eq with (ul := ul).  assumption.
   assumption.  assumption.  assumption.  assumption.  unfold node_height in |- *.
@@ -763,11 +763,11 @@ Proof.
   apply
    lt_trans_1
     with
-      (y := max (nat_of_ad (node_height cfg node1))
-              (nat_of_ad (node_height cfg node2))).
+      (y := max (nat_of_N (node_height cfg node1))
+              (nat_of_N (node_height cfg node2))).
   rewrite <- (BDDvar_max_max (node_height cfg node1) (node_height cfg node2)).
   rewrite (BDDvar_max_inf (node_height cfg node1) (node_height cfg node2)).
-  rewrite <- (max_x_x_eq_x (nat_of_ad (node_height cfg node2))).  apply lt_max_1.
+  rewrite <- (max_x_x_eq_x (nat_of_N (node_height cfg node2))).  apply lt_max_1.
   unfold node_height in |- *.  apply BDDcompare_lt.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
   rewrite <- (ad_S_compare x1 x2).  assumption.  apply BDDcompare_lt.
   unfold node_height in |- *.  apply bs_node_height_left with (x := x2) (r := r2).  exact (proj1 H1).
@@ -789,7 +789,7 @@ Proof.
    (BDDconfig_OK cfgl /\
     config_node_OK cfgl nodel /\
     used_nodes_preserved cfg cfgl ul /\
-    ad_le (node_height cfgl nodel)
+    Nle (node_height cfgl nodel)
       (BDDvar_max (node_height cfg l1) (node_height cfg node2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgl nodel)
       (bool_fun_or (bool_fun_of_BDD cfg l1) (bool_fun_of_BDD cfg node2))).
@@ -803,7 +803,7 @@ Proof.
    (BDDconfig_OK cfgr /\
     config_node_OK cfgr noder /\
     used_nodes_preserved cfgl cfgr (nodel :: ul) /\
-    ad_le (node_height cfgr noder)
+    Nle (node_height cfgr noder)
       (BDDvar_max (node_height cfgl r1) (node_height cfgl node2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgr noder)
       (bool_fun_or (bool_fun_of_BDD cfgl r1) (bool_fun_of_BDD cfgl node2))).
@@ -816,11 +816,11 @@ Proof.
   cut (used_node' cfgr (noder :: nodel :: ul) noder).  intros.
   cut
    (forall (xl : BDDvar) (ll rl : ad),
-    MapGet _ (fst cfgr) nodel = SOME _ (xl, (ll, rl)) ->
+    MapGet _ (fst cfgr) nodel = Some (xl, (ll, rl)) ->
     BDDcompare xl x1 = Datatypes.Lt).
   cut
    (forall (xr : BDDvar) (lr rr : ad),
-    MapGet _ (fst cfgr) noder = SOME _ (xr, (lr, rr)) ->
+    MapGet _ (fst cfgr) noder = Some (xr, (lr, rr)) ->
     BDDcompare xr x1 = Datatypes.Lt).
   intros.  cut (BDDconfig_OK cfg').
   cut (used_nodes_preserved cfgr cfg' (noder :: nodel :: ul)).
@@ -829,7 +829,7 @@ Proof.
    (bool_fun_eq (bool_fun_of_BDD cfg' node')
       (bool_fun_if x1 (bool_fun_of_BDD cfgr noder)
          (bool_fun_of_BDD cfgr nodel))).
-  cut (ad_le (node_height cfg' node') (ad_S x1) = true).  intros.
+  cut (Nle (node_height cfg' node') (ad_S x1) = true).  intros.
   cut (config_node_OK cfg' node1).  cut (config_node_OK cfg' node2).  intros.
   cut (nodes_preserved cfg' (BDDor_memo_put cfg' node1 node2 node')).  intro.
   cut (BDDconfig_OK (BDDor_memo_put cfg' node1 node2 node')).  intro.  split.
@@ -843,7 +843,7 @@ Proof.
   apply used_nodes_preserved_cons with (node := noder).  assumption.  
   apply nodes_preserved_used_nodes_preserved.  assumption.  
   rewrite
-   (ad_eq_complete
+   (Neqb_complete
       (node_height (BDDor_memo_put cfg' node1 node2 node') node')
       (node_height cfg' node')).
   split.  unfold node_height at 2 3 in |- *.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
@@ -891,8 +891,8 @@ Proof.
   assumption.  apply bool_fun_eq_refl.  apply bool_fun_or_orthogonal_left.  
   apply nodes_preserved_node_height_eq.  assumption.  assumption.  assumption.
   assumption.  apply BDDorm_put_OK.  assumption.  assumption.  assumption.
-  assumption.  rewrite (ad_eq_complete (node_height cfg' node1) (node_height cfg node1)).
-  rewrite (ad_eq_complete (node_height cfg' node2) (node_height cfg node2)).  unfold node_height at 2 3 in |- *.
+  assumption.  rewrite (Neqb_complete (node_height cfg' node1) (node_height cfg node1)).
+  rewrite (Neqb_complete (node_height cfg' node2) (node_height cfg node2)).  unfold node_height at 2 3 in |- *.
   unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
   rewrite (BDDvar_max_comm (ad_S x1) (ad_S x2)).
   rewrite (BDDvar_max_inf (ad_S x2) (ad_S x1)).  assumption.
@@ -1005,13 +1005,13 @@ Proof.
   apply
    le_lt_trans
     with
-      (m := nat_of_ad
+      (m := nat_of_N
               (BDDvar_max (node_height cfgl r1) (node_height cfgl node2))).
-  apply nat_le_complete.  assumption.  
-  rewrite (ad_eq_complete (node_height cfgl r1) (node_height cfg r1)).
-  rewrite (ad_eq_complete (node_height cfgl node2) (node_height cfg node2)).
+  apply leb_complete.  assumption.  
+  rewrite (Neqb_complete (node_height cfgl r1) (node_height cfg r1)).
+  rewrite (Neqb_complete (node_height cfgl node2) (node_height cfg node2)).
   rewrite (BDDvar_max_max (node_height cfg r1) (node_height cfg node2)).
-  rewrite <- (max_x_x_eq_x (nat_of_ad (node_height cfg node1))).  apply lt_max_1.  
+  rewrite <- (max_x_x_eq_x (nat_of_N (node_height cfg node1))).  apply lt_max_1.  
   apply BDDcompare_lt.  unfold node_height in |- *.  apply bs_node_height_right with (x := x1) (l := l1).
   exact (proj1 H1).  assumption.  apply BDDcompare_lt.  unfold node_height in |- *.
   unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.  rewrite <- (ad_S_compare x2 x1).
@@ -1023,16 +1023,16 @@ Proof.
   reflexivity.  intros.  rewrite (ad_S_compare xl x1).
   replace (ad_S xl) with (node_height cfgr nodel).
   replace (ad_S x1) with (node_height cfg node1).
-  rewrite (ad_eq_complete (node_height cfgr nodel) (node_height cfgl nodel)).
+  rewrite (Neqb_complete (node_height cfgr nodel) (node_height cfgl nodel)).
   apply BDDlt_compare.
   apply
    le_lt_trans
     with
-      (m := nat_of_ad
+      (m := nat_of_N
               (BDDvar_max (node_height cfg l1) (node_height cfg node2))).
-  apply nat_le_complete.  assumption.
+  apply leb_complete.  assumption.
   rewrite (BDDvar_max_max (node_height cfg l1) (node_height cfg node2)).
-  rewrite <- (max_x_x_eq_x (nat_of_ad (node_height cfg node1))).  apply lt_max_1.
+  rewrite <- (max_x_x_eq_x (nat_of_N (node_height cfg node1))).  apply lt_max_1.
   apply BDDcompare_lt.  unfold node_height in |- *.  apply bs_node_height_left with (x := x1) (r := r1).
   exact (proj1 H1).  assumption.  apply BDDcompare_lt.  unfold node_height in |- *.
   unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.  rewrite <- (ad_S_compare x2 x1).
@@ -1048,17 +1048,17 @@ Proof.
   apply
    lt_trans_1
     with
-      (y := max (nat_of_ad (node_height cfg node1))
-              (nat_of_ad (node_height cfg node2))).
+      (y := max (nat_of_N (node_height cfg node1))
+              (nat_of_N (node_height cfg node2))).
   rewrite <- (BDDvar_max_max (node_height cfg node1) (node_height cfg node2)).
   rewrite (BDDvar_max_comm (node_height cfg node1) (node_height cfg node2)).
   rewrite (BDDvar_max_inf (node_height cfg node2) (node_height cfg node1)).
-  rewrite <- (max_x_x_eq_x (nat_of_ad (node_height cfg node1))).  apply lt_max_1.
-  rewrite (ad_eq_complete (node_height cfgl r1) (node_height cfg r1)).  apply BDDcompare_lt.
+  rewrite <- (max_x_x_eq_x (nat_of_N (node_height cfg node1))).  apply lt_max_1.
+  rewrite (Neqb_complete (node_height cfgl r1) (node_height cfg r1)).  apply BDDcompare_lt.
   unfold node_height in |- *.  apply bs_node_height_right with (x := x1) (l := l1).  exact (proj1 H1).
   assumption.  apply used_nodes_preserved'_node_height_eq with (ul := ul).  assumption.
   assumption.  assumption.  assumption.  assumption.
-  rewrite (ad_eq_complete (node_height cfgl node2) (node_height cfg node2)).  unfold node_height in |- *.
+  rewrite (Neqb_complete (node_height cfgl node2) (node_height cfg node2)).  unfold node_height in |- *.
   apply BDDcompare_lt.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
   rewrite <- (ad_S_compare x2 x1).  assumption.
   apply used_nodes_preserved'_node_height_eq with (ul := ul).  assumption.  assumption.
@@ -1076,12 +1076,12 @@ Proof.
   apply
    lt_trans_1
     with
-      (y := max (nat_of_ad (node_height cfg node1))
-              (nat_of_ad (node_height cfg node2))).
+      (y := max (nat_of_N (node_height cfg node1))
+              (nat_of_N (node_height cfg node2))).
   rewrite <- (BDDvar_max_max (node_height cfg node1) (node_height cfg node2)).
   rewrite (BDDvar_max_comm (node_height cfg node1) (node_height cfg node2)).
   rewrite (BDDvar_max_inf (node_height cfg node2) (node_height cfg node1)).
-  rewrite <- (max_x_x_eq_x (nat_of_ad (node_height cfg node1))).  apply lt_max_1.
+  rewrite <- (max_x_x_eq_x (nat_of_N (node_height cfg node1))).  apply lt_max_1.
   apply BDDcompare_lt.  unfold node_height in |- *.  apply bs_node_height_left with (x := x1) (r := r1).
   exact (proj1 H1).  assumption.  unfold node_height in |- *.  apply BDDcompare_lt.
   unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.  rewrite <- (ad_S_compare x2 x1).
@@ -1091,28 +1091,28 @@ Proof.
   reflexivity.  apply high_used' with (node := node1) (x := x1) (l := l1).  assumption.
   assumption.  assumption.  apply low_used' with (node := node1) (x := x1) (r := r1).
   assumption.  assumption.  assumption.  apply BDDcompare_sup_inf.  assumption.
-  intro y0.  rewrite y0.  elim (sumbool_of_bool (ad_eq node2 BDDzero)).  intro y1.
+  intro y0.  rewrite y0.  elim (sumbool_of_bool (Neqb node2 BDDzero)).  intro y1.
   rewrite y1.  cut (nodes_preserved cfg (BDDor_memo_put cfg node1 node2 node1)).
   intro.  cut (BDDconfig_OK (BDDor_memo_put cfg node1 node2 node1)).  intro.
   split.  assumption.  split.
   apply nodes_preserved_config_node_OK with (cfg1 := cfg).  assumption.  
   apply used_node'_OK with (ul := ul).  assumption.  assumption.  assumption.
   split.  apply nodes_preserved_used_nodes_preserved.  assumption.  split.
-  simpl in |- *.  rewrite (ad_eq_complete _ _ y1).
-  rewrite (ad_eq_complete _ _ (node_height_zero cfg H1)).
-  rewrite (BDDvar_max_comm (node_height cfg node1) ad_z).  unfold BDDvar_max in |- *.  simpl in |- *.
+  simpl in |- *.  rewrite (Neqb_complete _ _ y1).
+  rewrite (Neqb_complete _ _ (node_height_zero cfg H1)).
+  rewrite (BDDvar_max_comm (node_height cfg node1) N0).  unfold BDDvar_max in |- *.  simpl in |- *.
   rewrite
-   (ad_eq_complete
+   (Neqb_complete
       (node_height (BDDor_memo_put cfg node1 BDDzero node1) node1)
       (node_height cfg node1)).
-  apply ad_le_refl.  apply nodes_preserved_node_height_eq.  assumption.
-  rewrite <- (ad_eq_complete _ _ y1).  assumption.
-  rewrite <- (ad_eq_complete _ _ y1).  assumption.
+  apply Nle_refl.  apply nodes_preserved_node_height_eq.  assumption.
+  rewrite <- (Neqb_complete _ _ y1).  assumption.
+  rewrite <- (Neqb_complete _ _ y1).  assumption.
   apply used_node'_OK with (ul := ul).  assumption.  assumption.  assumption.
   simpl in |- *.  apply bool_fun_eq_trans with (bf2 := bool_fun_of_BDD cfg node1).
   apply nodes_preserved_bool_fun.  assumption.  assumption.  assumption.
   apply used_node'_OK with (ul := ul).  assumption.  assumption.  assumption.
-  rewrite (ad_eq_complete _ _ y1).
+  rewrite (Neqb_complete _ _ y1).
   apply
    bool_fun_eq_trans
     with (bf2 := bool_fun_or (bool_fun_of_BDD cfg node1) bool_fun_zero).
@@ -1128,9 +1128,9 @@ Proof.
     with (bf2 := bool_fun_or (bool_fun_of_BDD cfg node1) bool_fun_zero).
   apply bool_fun_eq_sym.  apply bool_fun_or_zero.
   apply bool_fun_or_preserves_eq.  apply bool_fun_eq_refl.
-  apply bool_fun_eq_sym.  rewrite (ad_eq_complete _ _ y1).
+  apply bool_fun_eq_sym.  rewrite (Neqb_complete _ _ y1).
   apply bool_fun_of_BDD_zero.  assumption.  apply BDDorm_put_nodes_preserved.
-  intro y1.  rewrite y1.  cut (ad_eq node2 BDDone = true).  intro.
+  intro y1.  rewrite y1.  cut (Neqb node2 BDDone = true).  intro.
   cut (config_node_OK cfg node1).  cut (config_node_OK cfg node2).  intros.
   cut (nodes_preserved cfg (BDDor_memo_put cfg node1 node2 node2)).  intro.
   cut (BDDconfig_OK (BDDor_memo_put cfg node1 node2 node2)).  intro.  split.
@@ -1138,13 +1138,13 @@ Proof.
   assumption.  assumption.  split.  apply nodes_preserved_used_nodes_preserved.
   assumption.  split.  simpl in |- *.
   rewrite
-   (ad_eq_complete (node_height (BDDor_memo_put cfg node1 node2 node2) node2)
+   (Neqb_complete (node_height (BDDor_memo_put cfg node1 node2 node2) node2)
       (node_height cfg node2)).
   apply BDDvar_le_max_2.  apply nodes_preserved_node_height_eq.  assumption.
   assumption.  assumption.  assumption.  simpl in |- *.
   apply bool_fun_eq_trans with (bf2 := bool_fun_of_BDD cfg node2).
   apply nodes_preserved_bool_fun.  assumption.  assumption.  assumption.  
-  assumption.  rewrite (ad_eq_complete _ _ H6).
+  assumption.  rewrite (Neqb_complete _ _ H6).
   apply
    bool_fun_eq_trans
     with (bf2 := bool_fun_or (bool_fun_of_BDD cfg node1) bool_fun_one).
@@ -1157,11 +1157,11 @@ Proof.
   apply
    bool_fun_eq_trans
     with (bf2 := bool_fun_or (bool_fun_of_BDD cfg node1) bool_fun_one).
-  apply bool_fun_eq_sym.  rewrite (ad_eq_complete _ _ H6).
+  apply bool_fun_eq_sym.  rewrite (Neqb_complete _ _ H6).
   apply bool_fun_eq_trans with (bf2 := bool_fun_one).  apply bool_fun_or_one.
   apply bool_fun_eq_sym.  apply bool_fun_of_BDD_one.  assumption.
   apply bool_fun_or_preserves_eq.  apply bool_fun_eq_refl.
-  apply bool_fun_eq_sym.  rewrite (ad_eq_complete _ _ H6).
+  apply bool_fun_eq_sym.  rewrite (Neqb_complete _ _ H6).
   apply bool_fun_of_BDD_one.  assumption.  apply BDDorm_put_nodes_preserved.
   apply used_node'_OK with (ul := ul).  assumption.  assumption.  assumption.
   apply used_node'_OK with (ul := ul).  assumption.  assumption.  assumption.  
@@ -1169,20 +1169,20 @@ Proof.
   assumption.  assumption.  assumption.  unfold in_dom in |- *.  rewrite y0.
   reflexivity.  assumption.  intro y0.  rewrite y0.
   cut (config_node_OK cfg node1).  cut (config_node_OK cfg node2).
-  intros H00 H01.  elim (sumbool_of_bool (ad_eq node1 BDDzero)).  intro y1.
+  intros H00 H01.  elim (sumbool_of_bool (Neqb node1 BDDzero)).  intro y1.
   rewrite y1.  cut (nodes_preserved cfg (BDDor_memo_put cfg node1 node2 node2)).
   intro.  cut (BDDconfig_OK (BDDor_memo_put cfg node1 node2 node2)).  intro.
   split.  assumption.  split.
   apply nodes_preserved_config_node_OK with (cfg1 := cfg).  assumption.  assumption.
   split.  apply nodes_preserved_used_nodes_preserved.  assumption.  split.
   simpl in |- *.  rewrite
-   (ad_eq_complete (node_height (BDDor_memo_put cfg node1 node2 node2) node2)
+   (Neqb_complete (node_height (BDDor_memo_put cfg node1 node2 node2) node2)
       (node_height cfg node2)).
   apply BDDvar_le_max_2.  apply nodes_preserved_node_height_eq.  assumption.  
   assumption.  assumption.  assumption.  simpl in |- *.
   apply bool_fun_eq_trans with (bf2 := bool_fun_of_BDD cfg node2).
   apply nodes_preserved_bool_fun.  assumption.  assumption.  assumption.  
-  assumption.  rewrite (ad_eq_complete _ _ y1).
+  assumption.  rewrite (Neqb_complete _ _ y1).
   apply
    bool_fun_eq_trans
     with (bf2 := bool_fun_or bool_fun_zero (bool_fun_of_BDD cfg node2)).
@@ -1202,22 +1202,22 @@ Proof.
     with (bf2 := bool_fun_or (bool_fun_of_BDD cfg node2) bool_fun_zero).
   apply bool_fun_eq_sym.  apply bool_fun_or_zero.  apply bool_fun_or_comm.  
   apply bool_fun_or_preserves_eq.  apply bool_fun_eq_sym.
-  rewrite (ad_eq_complete _ _ y1).  apply bool_fun_of_BDD_zero.  assumption.
+  rewrite (Neqb_complete _ _ y1).  apply bool_fun_of_BDD_zero.  assumption.
   apply bool_fun_eq_refl.  apply BDDorm_put_nodes_preserved.  intro y1.
-  rewrite y1.  cut (ad_eq node1 BDDone = true).  intro.
+  rewrite y1.  cut (Neqb node1 BDDone = true).  intro.
   cut (nodes_preserved cfg (BDDor_memo_put cfg node1 node2 node1)).  intro.
   cut (BDDconfig_OK (BDDor_memo_put cfg node1 node2 node1)).  intro.  split.
   assumption.  split.  apply nodes_preserved_config_node_OK with (cfg1 := cfg).
   assumption.  assumption.  split.  apply nodes_preserved_used_nodes_preserved.
   assumption.  split.  simpl in |- *.  
   rewrite
-   (ad_eq_complete (node_height (BDDor_memo_put cfg node1 node2 node1) node1)
+   (Neqb_complete (node_height (BDDor_memo_put cfg node1 node2 node1) node1)
       (node_height cfg node1)).
   apply BDDvar_le_max_1.  apply nodes_preserved_node_height_eq.  assumption.  
   assumption.  assumption.  assumption.  simpl in |- *.
   apply bool_fun_eq_trans with (bf2 := bool_fun_of_BDD cfg node1).
   apply nodes_preserved_bool_fun.  assumption.  assumption.  assumption.  
-  assumption.  rewrite (ad_eq_complete _ _ H5).
+  assumption.  rewrite (Neqb_complete _ _ H5).
   apply
    bool_fun_eq_trans
     with (bf2 := bool_fun_or (bool_fun_of_BDD cfg node2) bool_fun_one).
@@ -1230,7 +1230,7 @@ Proof.
   apply bool_fun_eq_sym.  apply bool_fun_of_BDD_one.  assumption.  
   apply bool_fun_eq_refl.  apply BDDorm_put_OK.  assumption.  assumption.
   assumption.  assumption.  apply BDDvar_le_max_1.
-  rewrite (ad_eq_complete _ _ H5).  apply
+  rewrite (Neqb_complete _ _ H5).  apply
    bool_fun_eq_trans
     with (bf2 := bool_fun_or (bool_fun_of_BDD cfg node2) bool_fun_one).
   apply bool_fun_eq_sym.  apply bool_fun_eq_trans with (bf2 := bool_fun_one).
