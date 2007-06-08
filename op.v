@@ -205,7 +205,7 @@ Proof.
 Qed.
 
 Lemma BDDor_var_le :
- Nle (node_height (fst BDDor) (snd BDDor))
+ Nleb (node_height (fst BDDor) (snd BDDor))
    (BDDvar_max (node_height cfg node1) (node_height cfg node2)) = true.
 Proof.
   exact
@@ -653,7 +653,7 @@ Proof.
 Qed.
 
 Lemma BDDand_var_le :
- Nle (node_height (fst BDDand) (snd BDDand))
+ Nleb (node_height (fst BDDand) (snd BDDand))
    (BDDvar_max (node_height cfg node1) (node_height cfg node2)) = true.
 Proof.
   unfold BDDand in |- *.  elim (prod_sum _ _ (BDDneg cfg ul node1)).  intros cfg1 H.

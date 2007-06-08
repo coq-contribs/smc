@@ -163,12 +163,12 @@ Definition BDDfree_list_OK (bs : BDDstate) (fl : BDDfree_list)
   no_dup_list _ fl /\
   (forall node : ad,
    In node fl <->
-   Nle (Npos 2) node = true /\
-   Nle (ad_S node) cnt = true /\ MapGet _ bs node = None).
+   Nleb (Npos 2) node = true /\
+   Nleb (ad_S node) cnt = true /\ MapGet _ bs node = None).
 
 Definition cnt_OK (bs : BDDstate) (cnt : ad) :=
-  Nle (Npos 2) cnt = true /\
-  (forall a : ad, Nle cnt a = true -> MapGet _ bs a = None).
+  Nleb (Npos 2) cnt = true /\
+  (forall a : ad, Nleb cnt a = true -> MapGet _ bs a = None).
 
 Definition BDDneg_memo_OK (bs : BDDstate) (negm : BDDneg_memo) :=
   forall node node' : ad,
@@ -185,7 +185,7 @@ Definition BDDor_memo_OK (bs : BDDstate) (orm : BDDor_memo) :=
   node_OK bs node1 /\
   node_OK bs node2 /\
   node_OK bs node /\
-  Nle (bs_node_height bs node)
+  Nleb (bs_node_height bs node)
     (BDDvar_max (bs_node_height bs node1) (bs_node_height bs node2)) = true /\
   bool_fun_eq (bool_fun_of_BDD_bs bs node)
     (bool_fun_or (bool_fun_of_BDD_bs bs node1) (bool_fun_of_BDD_bs bs node2)).
@@ -195,7 +195,7 @@ Definition BDDuniv_memo_OK (bs : BDDstate) (um : BDDuniv_memo) :=
   MapGet2 _ um node x = Some node' ->
   node_OK bs node /\
   node_OK bs node' /\
-  Nle (bs_node_height bs node') (bs_node_height bs node) = true /\
+  Nleb (bs_node_height bs node') (bs_node_height bs node) = true /\
   bool_fun_eq (bool_fun_of_BDD_bs bs node')
     (bool_fun_forall x (bool_fun_of_BDD_bs bs node)).
 
@@ -244,10 +244,10 @@ Lemma initBDDfree_list_OK :
 Proof.
   unfold BDDfree_list_OK, initBDDstate, initBDDfree_list in |- *.  simpl in |- *.  split.
   apply no_dup_nil.  split.  tauto.  intro.  elim H; clear H; intros.
-  elim H0; clear H0; intros.  cut (Nle (ad_S node) node = true).  intro.
+  elim H0; clear H0; intros.  cut (Nleb (ad_S node) node = true).  intro.
   cut (Neqb node node = false).  rewrite (Neqb_correct node).
   intro; discriminate.  apply ad_S_le_then_neq.  assumption.
-  apply Nle_trans with (b := Npos 2).  assumption.  assumption.
+  apply Nleb_trans with (b := Npos 2).  assumption.  assumption.
 Qed.
 
 Lemma initBDDneg_memo_OK :
@@ -525,9 +525,9 @@ Lemma bs_node_height_left_le :
  BDDstate_OK bs ->
  forall (x : BDDvar) (l r node : ad),
  MapGet _ bs node = Some (x, (l, r)) ->
- Nle (bs_node_height bs l) x = true.
+ Nleb (bs_node_height bs l) x = true.
 Proof.
-  intros.  unfold Nle in |- *.  apply leb_correct.  apply lt_n_Sm_le.
+  intros.  unfold Nleb in |- *.  apply leb_correct.  apply lt_n_Sm_le.
   rewrite <- (ad_S_is_S x).  replace (ad_S x) with (bs_node_height bs node).
   apply BDDcompare_lt.  apply bs_node_height_left with (x := x) (r := r).  assumption.
   assumption.  unfold bs_node_height in |- *.  rewrite H0.  reflexivity.
@@ -538,9 +538,9 @@ Lemma bs_node_height_right_le :
  BDDstate_OK bs ->
  forall (x : BDDvar) (l r node : ad),
  MapGet _ bs node = Some (x, (l, r)) ->
- Nle (bs_node_height bs r) x = true.
+ Nleb (bs_node_height bs r) x = true.
 Proof.
-  intros.  unfold Nle in |- *.  apply leb_correct.  apply lt_n_Sm_le.
+  intros.  unfold Nleb in |- *.  apply leb_correct.  apply lt_n_Sm_le.
   rewrite <- (ad_S_is_S x).  replace (ad_S x) with (bs_node_height bs node).
   apply BDDcompare_lt.  apply bs_node_height_right with (x := x) (l := l).  assumption.
   assumption.  unfold bs_node_height in |- *.  rewrite H0.  reflexivity.
@@ -563,7 +563,7 @@ Qed.
 
 Lemma int_node_gt_1 :
  forall (bs : BDDstate) (node : ad),
- BDDstate_OK bs -> in_dom _ node bs = true -> Nle (Npos 2) node = true.
+ BDDstate_OK bs -> in_dom _ node bs = true -> Nleb (Npos 2) node = true.
 Proof.
   intros.  apply ad_gt_1_lemma.  unfold not in |- *; intro.  unfold BDDstate_OK in H.
   unfold BDDzero in H.  rewrite <- H1 in H.  unfold in_dom in H0.
@@ -574,10 +574,10 @@ Qed.
 
 Lemma int_node_lt_cnt :
  forall (bs : BDDstate) (cnt node : ad),
- cnt_OK bs cnt -> in_dom _ node bs = true -> Nle (ad_S node) cnt = true.
+ cnt_OK bs cnt -> in_dom _ node bs = true -> Nleb (ad_S node) cnt = true.
 Proof.
-  intros.  unfold cnt_OK in H.  apply Nlt_lemma.  apply not_true_is_false.
-  unfold not in |- *; intro.  unfold in_dom in H0.  unfold Nle in |- *.
+  intros.  unfold cnt_OK in H.  apply Nltb_lebmma.  apply not_true_is_false.
+  unfold not in |- *; intro.  unfold in_dom in H0.  unfold Nleb in |- *.
   rewrite (proj2 H node H1) in H0.  discriminate.
 Qed.
 
@@ -1322,7 +1322,7 @@ Lemma BDDvar_independent_1 :
  forall (n : nat) (node : ad) (x : BDDvar),
  n = nat_of_N (bs_node_height bs node) ->
  node_OK bs node ->
- Nle (bs_node_height bs node) x = true ->
+ Nleb (bs_node_height bs node) x = true ->
  bool_fun_independent (bool_fun_of_BDD_bs bs node) x.
 Proof.
   intros bs H n.  apply
@@ -1332,7 +1332,7 @@ Proof.
             forall (node : ad) (x : BDDvar),
             n = nat_of_N (bs_node_height bs node) ->
             node_OK bs node ->
-            Nle (bs_node_height bs node) x = true ->
+            Nleb (bs_node_height bs node) x = true ->
             bool_fun_independent (bool_fun_of_BDD_bs bs node) x).
   intros.  elim H2; intro.  rewrite H4.  apply bool_fun_eq_independent with (bf1 := bool_fun_zero).
   apply bool_fun_eq_sym.  apply bool_fun_of_BDD_bs_zero.  assumption.
@@ -1350,13 +1350,13 @@ Proof.
   apply bool_fun_independent_if.  apply H0 with (m := nat_of_N (bs_node_height bs r)).
   rewrite H1.  apply BDDcompare_lt.  apply bs_node_height_right with (x := x') (l := l).
   assumption.  assumption.  reflexivity.  apply high_OK with (x := x') (l := l) (node := node).
-  assumption.  assumption.  unfold Nle in |- *.  apply leb_correct.  apply lt_le_weak.
+  assumption.  assumption.  unfold Nleb in |- *.  apply leb_correct.  apply lt_le_weak.
   apply lt_le_trans with (m := nat_of_N (bs_node_height bs node)).  apply BDDcompare_lt.
   apply bs_node_height_right with (x := x') (l := l).  assumption.  assumption.
   apply leb_complete.  assumption.  apply H0 with (m := nat_of_N (bs_node_height bs l)).
   rewrite H1.  apply BDDcompare_lt.  apply bs_node_height_left with (x := x') (r := r).
   assumption.  assumption.  reflexivity.  apply low_OK with (x := x') (r := r) (node := node).
-  assumption.  assumption.  unfold Nle in |- *.  apply leb_correct.  apply lt_le_weak.
+  assumption.  assumption.  unfold Nleb in |- *.  apply leb_correct.  apply lt_le_weak.
   apply lt_le_trans with (m := nat_of_N (bs_node_height bs node)).  apply BDDcompare_lt.
   apply bs_node_height_left with (x := x') (r := r).  assumption.  assumption.
   apply leb_complete.  assumption.  unfold bs_node_height in H3.  rewrite H5 in H3.
@@ -1369,7 +1369,7 @@ Lemma BDDvar_independent_bs :
  BDDstate_OK bs ->
  forall (node : ad) (x : BDDvar),
  node_OK bs node ->
- Nle (bs_node_height bs node) x = true ->
+ Nleb (bs_node_height bs node) x = true ->
  bool_fun_independent (bool_fun_of_BDD_bs bs node) x.
 Proof.
   intros.  apply BDDvar_independent_1 with (n := nat_of_N (bs_node_height bs node)).
@@ -1710,7 +1710,7 @@ Proof.
   apply bool_fun_of_BDD_bs_high with (l := l2).  assumption.  assumption.
   apply bool_fun_eq_independent with (bf1 := bool_fun_of_BDD_bs bs node1).
   assumption.  apply BDDvar_independent_bs.  assumption.  assumption.
-  unfold Nle in |- *.  apply leb_correct.  unfold bs_node_height in |- *.  rewrite H6.
+  unfold Nleb in |- *.  apply leb_correct.  unfold bs_node_height in |- *.  rewrite H6.
   rewrite (ad_S_is_S x1).  apply lt_le_S.  apply BDDcompare_lt.  assumption.
   intro.  absurd (l1 = r1).  unfold not in |- *; intro.  cut (Neqb l1 r1 = true).  intro.
   rewrite (proj1 (internal_node_lemma bs x1 l1 r1 node1 H H6)) in H10.
@@ -1737,7 +1737,7 @@ Proof.
   apply bool_fun_of_BDD_bs_high with (l := l1).  assumption.  assumption.
   apply bool_fun_eq_independent with (bf1 := bool_fun_of_BDD_bs bs node2).
   apply bool_fun_eq_sym.  assumption.  apply BDDvar_independent_bs.  assumption.
-  assumption.  unfold Nle in |- *.  apply leb_correct.  unfold bs_node_height in |- *.
+  assumption.  unfold Nleb in |- *.  apply leb_correct.  unfold bs_node_height in |- *.
   rewrite H8.  rewrite (ad_S_is_S x2).  apply lt_le_S.  apply BDDcompare_lt.
   apply BDDcompare_sup_inf.  assumption.  intro y.  unfold in_dom in H7.
   rewrite y in H7; discriminate.  intro y.  unfold in_dom in H5.
@@ -1890,7 +1890,7 @@ Proof.
    (node_OK bs node1 /\
     node_OK bs node2 /\
     node_OK bs node /\
-    Nle (bs_node_height bs node)
+    Nleb (bs_node_height bs node)
       (BDDvar_max (bs_node_height bs node1) (bs_node_height bs node2)) = true /\
     bool_fun_eq (bool_fun_of_BDD_bs bs node)
       (bool_fun_or (bool_fun_of_BDD_bs bs node1)
@@ -1932,7 +1932,7 @@ Proof.
   cut
    (node_OK bs node /\
     node_OK bs node' /\
-    Nle (bs_node_height bs node') (bs_node_height bs node) = true /\
+    Nleb (bs_node_height bs node') (bs_node_height bs node) = true /\
     bool_fun_eq (bool_fun_of_BDD_bs bs node')
       (bool_fun_forall x (bool_fun_of_BDD_bs bs node))).
   intros.  split.  apply nodes_preserved_bs_node_OK with (bs1 := bs).  assumption.
@@ -2209,7 +2209,7 @@ Lemma BDDorm_put_OK :
  config_node_OK cfg node1 ->
  config_node_OK cfg node2 ->
  config_node_OK cfg node' ->
- Nle (node_height cfg node')
+ Nleb (node_height cfg node')
    (BDDvar_max (node_height cfg node1) (node_height cfg node2)) = true ->
  bool_fun_eq (bool_fun_of_BDD cfg node')
    (bool_fun_or (bool_fun_of_BDD cfg node1) (bool_fun_of_BDD cfg node2)) ->
@@ -2266,7 +2266,7 @@ Lemma BDDum_put_OK :
  BDDconfig_OK cfg ->
  config_node_OK cfg node ->
  config_node_OK cfg node' ->
- Nle (node_height cfg node') (node_height cfg node) = true ->
+ Nleb (node_height cfg node') (node_height cfg node) = true ->
  bool_fun_eq (bool_fun_of_BDD cfg node')
    (bool_fun_forall x (bool_fun_of_BDD cfg node)) ->
  BDDconfig_OK (BDDuniv_memo_put cfg x node node').

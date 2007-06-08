@@ -123,7 +123,7 @@ Lemma BDDor_1_lemma :
  config_node_OK (fst (BDDor_1 cfg ul node1 node2 bound))
    (snd (BDDor_1 cfg ul node1 node2 bound)) /\
  used_nodes_preserved cfg (fst (BDDor_1 cfg ul node1 node2 bound)) ul /\
- Nle
+ Nleb
    (node_height (fst (BDDor_1 cfg ul node1 node2 bound))
       (snd (BDDor_1 cfg ul node1 node2 bound)))
    (BDDvar_max (node_height cfg node1) (node_height cfg node2)) = true /\
@@ -162,7 +162,7 @@ Proof.
    (BDDconfig_OK cfgl /\
     config_node_OK cfgl nodel /\
     used_nodes_preserved cfg cfgl ul /\
-    Nle (node_height cfgl nodel)
+    Nleb (node_height cfgl nodel)
       (BDDvar_max (node_height cfg l1) (node_height cfg l2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgl nodel)
       (bool_fun_or (bool_fun_of_BDD cfg l1) (bool_fun_of_BDD cfg l2))).
@@ -175,7 +175,7 @@ Proof.
    (BDDconfig_OK cfgr /\
     config_node_OK cfgr noder /\
     used_nodes_preserved cfgl cfgr (nodel :: ul) /\
-    Nle (node_height cfgr noder)
+    Nleb (node_height cfgr noder)
       (BDDvar_max (node_height cfgl r1) (node_height cfgl r2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgr noder)
       (bool_fun_or (bool_fun_of_BDD cfgl r1) (bool_fun_of_BDD cfgl r2))).
@@ -202,7 +202,7 @@ Proof.
    (bool_fun_eq (bool_fun_of_BDD cfg' node')
       (bool_fun_if x1 (bool_fun_of_BDD cfgr noder)
          (bool_fun_of_BDD cfgr nodel))).
-  cut (Nle (node_height cfg' node') (ad_S x1) = true).  intros.
+  cut (Nleb (node_height cfg' node') (ad_S x1) = true).  intros.
   cut (config_node_OK cfg' node1).  cut (config_node_OK cfg' node2).  intros.
   cut (nodes_preserved cfg' (BDDor_memo_put cfg' node1 node2 node')).  intro.
   cut (BDDconfig_OK (BDDor_memo_put cfg' node1 node2 node')).  intro.  split.
@@ -220,7 +220,7 @@ Proof.
       (node_height (BDDor_memo_put cfg' node1 node2 node') node')
       (node_height cfg' node')).
   split.  unfold node_height at 2 3 in |- *.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
-  rewrite <- (BDD_EGAL_complete _ _ y0).  apply Nle_trans with (b := ad_S x1).
+  rewrite <- (BDD_EGAL_complete _ _ y0).  apply Nleb_trans with (b := ad_S x1).
   assumption.  apply BDDvar_le_max_1.
   apply bool_fun_eq_trans with (bf2 := bool_fun_of_BDD cfg' node').
   apply nodes_preserved_bool_fun.  assumption.  assumption.  assumption.  
@@ -267,7 +267,7 @@ Proof.
   rewrite (Neqb_complete (node_height cfg' node1) (node_height cfg node1)).
   rewrite (Neqb_complete (node_height cfg' node2) (node_height cfg node2)).
   unfold node_height at 2 3 in |- *.  unfold bs_node_height in |- *.  rewrite H5.  rewrite H6.
-  apply Nle_trans with (b := ad_S x1).  assumption.
+  apply Nleb_trans with (b := ad_S x1).  assumption.
   rewrite (BDD_EGAL_complete _ _ y0).  apply BDDvar_le_max_1.  
   apply used_nodes_preserved'_node_height_eq with (ul := ul).  assumption.  assumption.
   apply used_nodes_preserved_trans with (cfg2 := cfgl).  assumption.  assumption.
@@ -480,7 +480,7 @@ Proof.
    (BDDconfig_OK cfgl /\
     config_node_OK cfgl nodel /\
     used_nodes_preserved cfg cfgl ul /\
-    Nle (node_height cfgl nodel)
+    Nleb (node_height cfgl nodel)
       (BDDvar_max (node_height cfg node1) (node_height cfg l2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgl nodel)
       (bool_fun_or (bool_fun_of_BDD cfg node1) (bool_fun_of_BDD cfg l2))).
@@ -495,7 +495,7 @@ Proof.
    (BDDconfig_OK cfgr /\
     config_node_OK cfgr noder /\
     used_nodes_preserved cfgl cfgr (nodel :: ul) /\
-    Nle (node_height cfgr noder)
+    Nleb (node_height cfgr noder)
       (BDDvar_max (node_height cfgl node1) (node_height cfgl r2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgr noder)
       (bool_fun_or (bool_fun_of_BDD cfgl node1) (bool_fun_of_BDD cfgl r2))).
@@ -522,7 +522,7 @@ Proof.
    (bool_fun_eq (bool_fun_of_BDD cfg' node')
       (bool_fun_if x2 (bool_fun_of_BDD cfgr noder)
          (bool_fun_of_BDD cfgr nodel))).
-  cut (Nle (node_height cfg' node') (ad_S x2) = true).  intros.
+  cut (Nleb (node_height cfg' node') (ad_S x2) = true).  intros.
   cut (config_node_OK cfg' node1).  cut (config_node_OK cfg' node2).  intros.
   cut (nodes_preserved cfg' (BDDor_memo_put cfg' node1 node2 node')).  intro.
   cut (BDDconfig_OK (BDDor_memo_put cfg' node1 node2 node')).  intro.  split.
@@ -789,7 +789,7 @@ Proof.
    (BDDconfig_OK cfgl /\
     config_node_OK cfgl nodel /\
     used_nodes_preserved cfg cfgl ul /\
-    Nle (node_height cfgl nodel)
+    Nleb (node_height cfgl nodel)
       (BDDvar_max (node_height cfg l1) (node_height cfg node2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgl nodel)
       (bool_fun_or (bool_fun_of_BDD cfg l1) (bool_fun_of_BDD cfg node2))).
@@ -803,7 +803,7 @@ Proof.
    (BDDconfig_OK cfgr /\
     config_node_OK cfgr noder /\
     used_nodes_preserved cfgl cfgr (nodel :: ul) /\
-    Nle (node_height cfgr noder)
+    Nleb (node_height cfgr noder)
       (BDDvar_max (node_height cfgl r1) (node_height cfgl node2)) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgr noder)
       (bool_fun_or (bool_fun_of_BDD cfgl r1) (bool_fun_of_BDD cfgl node2))).
@@ -829,7 +829,7 @@ Proof.
    (bool_fun_eq (bool_fun_of_BDD cfg' node')
       (bool_fun_if x1 (bool_fun_of_BDD cfgr noder)
          (bool_fun_of_BDD cfgr nodel))).
-  cut (Nle (node_height cfg' node') (ad_S x1) = true).  intros.
+  cut (Nleb (node_height cfg' node') (ad_S x1) = true).  intros.
   cut (config_node_OK cfg' node1).  cut (config_node_OK cfg' node2).  intros.
   cut (nodes_preserved cfg' (BDDor_memo_put cfg' node1 node2 node')).  intro.
   cut (BDDconfig_OK (BDDor_memo_put cfg' node1 node2 node')).  intro.  split.
@@ -1105,7 +1105,7 @@ Proof.
    (Neqb_complete
       (node_height (BDDor_memo_put cfg node1 BDDzero node1) node1)
       (node_height cfg node1)).
-  apply Nle_refl.  apply nodes_preserved_node_height_eq.  assumption.
+  apply Nleb_refl.  apply nodes_preserved_node_height_eq.  assumption.
   rewrite <- (Neqb_complete _ _ y1).  assumption.
   rewrite <- (Neqb_complete _ _ y1).  assumption.
   apply used_node'_OK with (ul := ul).  assumption.  assumption.  assumption.

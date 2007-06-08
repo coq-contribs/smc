@@ -329,9 +329,9 @@ Proof.
   rewrite (MapPut_semantics unit ve (N_of_nat U) tt x).  rewrite H2.
   unfold in_dom in H0.  apply H0.  unfold var_lu in |- *.  rewrite y.  reflexivity.
   apply not_true_is_false.  unfold not in |- *; intro.
-  cut (Nle (N_of_nat L) (N_of_nat U) = true).
-  rewrite (Neqb_complete _ _ H2).  unfold Nle in |- *.  rewrite (nat_of_N_of_nat L).
-  rewrite y.  intro; discriminate.  unfold Nle in |- *.  rewrite (nat_of_N_of_nat L).
+  cut (Nleb (N_of_nat L) (N_of_nat U) = true).
+  rewrite (Neqb_complete _ _ H2).  unfold Nleb in |- *.  rewrite (nat_of_N_of_nat L).
+  rewrite y.  intro; discriminate.  unfold Nleb in |- *.  rewrite (nat_of_N_of_nat L).
   rewrite (nat_of_N_of_nat U).  apply leb_correct.  assumption.
   simpl in |- *.  intro y.  unfold in_dom in |- *.
   rewrite (MapPut_semantics unit ve (N_of_nat U) tt x).

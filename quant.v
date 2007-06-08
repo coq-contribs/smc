@@ -420,7 +420,7 @@ Proof.
 Qed.
 
 Lemma BDDuniv_var_le :
- Nle (node_height (fst BDDuniv) (snd BDDuniv)) (node_height cfg node) =
+ Nleb (node_height (fst BDDuniv) (snd BDDuniv)) (node_height cfg node) =
  true.
 Proof.
   exact
@@ -617,7 +617,7 @@ Proof.
 Qed.
 
 (*
-Lemma BDDex_var_le : (Nle (node_height (Fst BDDex) (Snd BDDex)) (node_height cfg node))=true.
+Lemma BDDex_var_le : (Nleb (node_height (Fst BDDex) (Snd BDDex)) (node_height cfg node))=true.
 Proof.
 
 Qed.

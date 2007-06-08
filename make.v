@@ -166,7 +166,7 @@ Proof.
 Qed.
 
 Lemma BDDmake_node_height_le :
- Nle (node_height (fst BDDmake) (snd BDDmake)) (ad_S x) = true.
+ Nleb (node_height (fst BDDmake) (snd BDDmake)) (ad_S x) = true.
 Proof.
   elim (sumbool_of_bool (Neqb l r)).  intro y.
   rewrite
@@ -174,11 +174,11 @@ Proof.
       (node_height cfg l)).
   unfold node_height in |- *.  unfold bs_node_height in |- *.  elim (option_sum _ (MapGet _ (fst cfg) l)).
   intro y0.  elim y0.  intro x0.  elim x0.  intro y1.  intro y2.  elim y2.  intros y3 y4 y5.
-  rewrite y5.  unfold Nle in |- *.  apply leb_correct.  apply lt_le_weak.
+  rewrite y5.  unfold Nleb in |- *.  apply leb_correct.  apply lt_le_weak.
   apply BDDcompare_lt.  rewrite <- (ad_S_compare y1 x).
   apply xl_lt_x with (ll := y3) (rl := y4).  assumption.  intro y0.  rewrite y0.
   reflexivity.  apply BDDmake_node_height_eq_1.  assumption.  intro y.
-  rewrite (Neqb_complete _ _ (BDDmake_node_height_eq y)).  apply Nle_refl.
+  rewrite (Neqb_complete _ _ (BDDmake_node_height_eq y)).  apply Nleb_refl.
 Qed.
 
 End BDD_make.

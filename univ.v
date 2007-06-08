@@ -82,7 +82,7 @@ Lemma BDDuniv_1_lemma :
  config_node_OK (fst (BDDuniv_1 cfg ul node u bound))
    (snd (BDDuniv_1 cfg ul node u bound)) /\
  used_nodes_preserved cfg (fst (BDDuniv_1 cfg ul node u bound)) ul /\
- Nle
+ Nleb
    (node_height (fst (BDDuniv_1 cfg ul node u bound))
       (snd (BDDuniv_1 cfg ul node u bound))) (node_height cfg node) = true /\
  bool_fun_eq
@@ -109,9 +109,9 @@ Proof.
   assumption.  split.  apply BDDand_used_nodes_preserved.  assumption.
   assumption.  assumption.  assumption.  assumption.  split.
   apply
-   Nle_trans with (b := BDDvar_max (node_height cfg l) (node_height cfg r)).
+   Nleb_trans with (b := BDDvar_max (node_height cfg l) (node_height cfg r)).
   apply BDDand_var_le.  assumption.  assumption.  assumption.  assumption.  
-  assumption.  unfold Nle in |- *.
+  assumption.  unfold Nleb in |- *.
   rewrite (BDDvar_max_max (node_height cfg l) (node_height cfg r)).
   apply leb_correct.  apply lt_le_weak.  apply
    lt_le_trans
@@ -151,12 +151,12 @@ Proof.
   apply bool_fun_of_BDD_int.  assumption.  assumption.  intros y0.  rewrite y0.
   split.  assumption.  split.  apply used_node'_OK with (ul := ul).  assumption.
   assumption.  assumption.  split.  apply used_nodes_preserved_refl.  split.
-  apply Nle_refl.  simpl in |- *.  apply bool_fun_eq_sym.
+  apply Nleb_refl.  simpl in |- *.  apply bool_fun_eq_sym.
   apply bool_fun_forall_independent.  unfold bool_fun_of_BDD in |- *.
   apply BDDvar_independent_bs.  exact (proj1 H1).  
   fold (node_OK (fst cfg) node) in |- *.  fold (config_node_OK cfg node) in |- *.
   apply used_node'_OK with (ul := ul).  assumption.  assumption.  assumption.
-  unfold bs_node_height in |- *.  rewrite H4.  unfold Nle in |- *.  rewrite (ad_S_is_S x).
+  unfold bs_node_height in |- *.  rewrite H4.  unfold Nleb in |- *.  rewrite (ad_S_is_S x).
   apply leb_correct.  fold lt in |- *.  fold (nat_of_N x < nat_of_N u) in |- *.
   apply BDDcompare_lt.  assumption.  intros y0 H5 H6.  rewrite y0.
   elim (prod_sum _ _ (BDDuniv_1 cfg ul l u n)).  intros cfgl H7.
@@ -168,7 +168,7 @@ Proof.
    (BDDconfig_OK cfgl /\
     config_node_OK cfgl nodel /\
     used_nodes_preserved cfg cfgl ul /\
-    Nle (node_height cfgl nodel) (node_height cfg l) = true /\
+    Nleb (node_height cfgl nodel) (node_height cfg l) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgl nodel)
       (bool_fun_forall u (bool_fun_of_BDD cfg l))).
   intro.  elim H10; clear H10; intros.  elim H11; clear H11; intros.
@@ -181,7 +181,7 @@ Proof.
    (BDDconfig_OK cfgr /\
     config_node_OK cfgr noder /\
     used_nodes_preserved cfgl cfgr (nodel :: ul) /\
-    Nle (node_height cfgr noder) (node_height cfgl r) = true /\
+    Nleb (node_height cfgr noder) (node_height cfgl r) = true /\
     bool_fun_eq (bool_fun_of_BDD cfgr noder)
       (bool_fun_forall u (bool_fun_of_BDD cfgl r))).
   intro.  elim H21; clear H21; intros.  elim H22; clear H22; intros.
@@ -206,7 +206,7 @@ Proof.
    (bool_fun_eq (bool_fun_of_BDD cfg' node')
       (bool_fun_if x (bool_fun_of_BDD cfgr noder)
          (bool_fun_of_BDD cfgr nodel))).
-  cut (Nle (node_height cfg' node') (ad_S x) = true).  intros.
+  cut (Nleb (node_height cfg' node') (ad_S x) = true).  intros.
   cut (config_node_OK cfg' node).  intro.
   cut (nodes_preserved cfg' (BDDuniv_memo_put cfg' u node node')).  intro.
   cut (BDDconfig_OK (BDDuniv_memo_put cfg' u node node')).  intro.  split.
@@ -222,9 +222,9 @@ Proof.
   rewrite
    (Neqb_complete (node_height (BDDuniv_memo_put cfg' u node node') node')
       (node_height cfg' node')).
-  split.  apply Nle_trans with (b := ad_S x).  assumption.
+  split.  apply Nleb_trans with (b := ad_S x).  assumption.
   unfold node_height in |- *.  unfold bs_node_height in |- *.
-  rewrite H4.  apply Nle_refl.
+  rewrite H4.  apply Nleb_refl.
   apply bool_fun_eq_trans with (bf2 := bool_fun_of_BDD cfg' node').
   apply nodes_preserved_bool_fun.  assumption.  assumption.  assumption.
   assumption.  apply
@@ -408,7 +408,7 @@ reflexivity.
   assumption.  assumption.  intro y0.  rewrite y0.  simpl in |- *.  split.  assumption.
   split.  apply used_node'_OK with (ul := ul).  assumption.  assumption.  
   assumption.  split.  apply used_nodes_preserved_refl.  split.
-  apply Nle_refl.  cut (config_node_OK cfg node).  intro.
+  apply Nleb_refl.  cut (config_node_OK cfg node).  intro.
   unfold config_node_OK in H4.  elim H4.  intro.  rewrite H5.
   apply bool_fun_eq_trans with bool_fun_zero.  apply bool_fun_of_BDD_zero.
   assumption.  

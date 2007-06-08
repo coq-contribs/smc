@@ -208,7 +208,7 @@ Proof.
   exact (proj2 (proj2 (proj1 (proj2 H4 (snd BDDalloc)) H))).
   intro.  rewrite <- H.
   apply (proj2 (proj1 (proj2 (proj2 (proj2 new_cfg_OK))))).
-  apply Nle_refl.
+  apply Nleb_refl.
 Qed.
 
 Lemma BDDalloc_lemma_4 :
@@ -240,14 +240,14 @@ Proof.
   intros.  elim BDDalloc_lemma_2.  intro.  rewrite (BDDalloc_lemma_1 BDDzero).
   elim (sumbool_of_bool (Neqb BDDzero (snd BDDalloc))).  intro y.
   rewrite <- (Neqb_complete _ _ y) in H.
-  absurd (Nle (Npos 2) BDDzero = true).  unfold BDDzero in |- *.  unfold not in |- *.
-  intro.  unfold Nle in H0.  simpl in H0.  discriminate.  
+  absurd (Nleb (Npos 2) BDDzero = true).  unfold BDDzero in |- *.  unfold not in |- *.
+  intro.  unfold Nleb in H0.  simpl in H0.  discriminate.  
   apply (proj1 (proj1 (proj2 (fl_of_cfg_OK _ new_cfg_OK) BDDzero) H)).
   intro y.  rewrite y.  exact (proj1 (bs_of_cfg_OK _ new_cfg_OK)).  intro.
   rewrite (BDDalloc_lemma_1 BDDzero).  rewrite <- H.
   elim (sumbool_of_bool (Neqb BDDzero (cnt_of_cfg new_cfg))).  intro y.
-  cut (Nle (Npos 2) (cnt_of_cfg new_cfg) = true).
-  rewrite <- (Neqb_complete _ _ y).  intro.  unfold Nle in H0.  simpl in H0.
+  cut (Nleb (Npos 2) (cnt_of_cfg new_cfg) = true).
+  rewrite <- (Neqb_complete _ _ y).  intro.  unfold Nleb in H0.  simpl in H0.
   discriminate.  exact (proj1 (cnt_of_cfg_OK _ new_cfg_OK)).  intro y.
   rewrite y.  exact (proj1 (bs_of_cfg_OK _ new_cfg_OK)).
 Qed.
@@ -257,14 +257,14 @@ Proof.
   intros.  elim BDDalloc_lemma_2.  intro.  rewrite (BDDalloc_lemma_1 BDDone).
   elim (sumbool_of_bool (Neqb BDDone (snd BDDalloc))).  intro y.
   rewrite <- (Neqb_complete _ _ y) in H.
-  absurd (Nle (Npos 2) BDDone = true).  unfold BDDone in |- *.  unfold not in |- *.
-  intro.  unfold Nle in H0.  simpl in H0.  discriminate.  
+  absurd (Nleb (Npos 2) BDDone = true).  unfold BDDone in |- *.  unfold not in |- *.
+  intro.  unfold Nleb in H0.  simpl in H0.  discriminate.  
   apply (proj1 (proj1 (proj2 (fl_of_cfg_OK _ new_cfg_OK) BDDone) H)).
   intro y.  rewrite y.  exact (proj1 (proj2 (bs_of_cfg_OK _ new_cfg_OK))).
   intro.  rewrite (BDDalloc_lemma_1 BDDone).  rewrite <- H.
   elim (sumbool_of_bool (Neqb BDDone (cnt_of_cfg new_cfg))).  intro y.
-  cut (Nle (Npos 2) (cnt_of_cfg new_cfg) = true).
-  rewrite <- (Neqb_complete _ _ y).  intro.  unfold Nle in H0.  simpl in H0.
+  cut (Nleb (Npos 2) (cnt_of_cfg new_cfg) = true).
+  rewrite <- (Neqb_complete _ _ y).  intro.  unfold Nleb in H0.  simpl in H0.
   discriminate.  exact (proj1 (cnt_of_cfg_OK _ new_cfg_OK)).  intro y.
   rewrite y.  exact (proj1 (proj2 (bs_of_cfg_OK _ new_cfg_OK))).
 Qed.
@@ -378,16 +378,16 @@ Lemma BDDalloc_keeps_cnt_OK :
 Proof.
   unfold BDDalloc, cnt_OK in |- *.  rewrite (cfg_comp new_cfg).
   elim (list_sum _ (fl_of_cfg new_cfg)).  intro.  rewrite H.  simpl in |- *.  split.
-  apply Nle_trans with (b := cnt_of_cfg new_cfg).  unfold cnt_of_cfg in |- *.
+  apply Nleb_trans with (b := cnt_of_cfg new_cfg).  unfold cnt_of_cfg in |- *.
   exact (proj1 (proj1 (proj2 (proj2 (proj2 new_cfg_OK))))).
-  unfold Nle in |- *.  apply leb_correct.  rewrite (ad_S_is_S (cnt_of_cfg new_cfg)).
+  unfold Nleb in |- *.  apply leb_correct.  rewrite (ad_S_is_S (cnt_of_cfg new_cfg)).
   apply le_S.  apply le_n.  intros.
   rewrite
    (MapPut_semantics (BDDvar * (ad * ad)) (bs_of_cfg new_cfg)
       (cnt_of_cfg new_cfg) (x, (l, r)) a).
   replace (Neqb (cnt_of_cfg new_cfg) a) with false.
   refine (proj2 (proj1 (proj2 (proj2 (proj2 new_cfg_OK)))) a _).
-  apply Nle_trans with (b := ad_S (cnt_of_cfg new_cfg)).  unfold Nle in |- *.
+  apply Nleb_trans with (b := ad_S (cnt_of_cfg new_cfg)).  unfold Nleb in |- *.
   apply leb_correct.  rewrite (ad_S_is_S (cnt_of_cfg new_cfg)).
   apply le_S.  apply le_n.  assumption.  symmetry  in |- *.  apply ad_S_le_then_neq.
   assumption.  intro.  elim H; clear H; intros.  elim H; clear H; intros.
@@ -398,7 +398,7 @@ Proof.
       (x, (l, r)) a).
   cut (Neqb x0 a = false).  intro; rewrite H1.
   apply (proj2 (proj1 (proj2 (proj2 (proj2 new_cfg_OK))))).
-  exact H0.  apply ad_S_le_then_neq.  apply Nle_trans with (b := cnt_of_cfg new_cfg).
+  exact H0.  apply ad_S_le_then_neq.  apply Nleb_trans with (b := cnt_of_cfg new_cfg).
   unfold cnt_of_cfg in |- *.  refine
    (proj1 (proj2 (proj1 (proj2 (proj1 (proj2 (proj2 new_cfg_OK))) x0) _))).
   unfold fl_of_cfg in H.  rewrite H.  simpl in |- *.  left; reflexivity.  assumption.
@@ -418,7 +418,7 @@ Proof.
   intro y.  rewrite y in H2.  discriminate.  intro y.  rewrite y in H2.
   absurd (In node (fl_of_cfg new_cfg)).  rewrite H.  simpl in |- *.  tauto.  
   apply (proj2 (proj2 (proj1 (proj2 (proj2 new_cfg_OK))) node)).
-  split.  assumption.  split.  unfold Nle in |- *.  apply leb_correct.
+  split.  assumption.  split.  unfold Nleb in |- *.  apply leb_correct.
   rewrite (ad_S_is_S node).  apply lt_le_S.
   cut (nat_of_N node <= nat_of_N (cnt_of_cfg new_cfg)).  intro.
   elim (le_lt_or_eq _ _ H3).  tauto.  intro.  unfold cnt_of_cfg in y.
@@ -426,7 +426,7 @@ Proof.
   rewrite (Neqb_correct (fst (snd (snd (snd new_cfg))))) in y.  discriminate.
   rewrite <- (N_of_nat_of_N node).  rewrite H4.  apply N_of_nat_of_N.  
   apply le_S_n.  rewrite <- (ad_S_is_S node).
-  rewrite <- (ad_S_is_S (cnt_of_cfg new_cfg)).  unfold Nle in H1.
+  rewrite <- (ad_S_is_S (cnt_of_cfg new_cfg)).  unfold Nleb in H1.
   apply leb_complete.  assumption.  assumption.  intro.
   elim H; clear H; intros.  elim H; clear H; intros.  rewrite H.  simpl in |- *.
   unfold BDDfree_list_OK in |- *.  split.  apply no_dup_cons_no_dup with (a := x0).

@@ -168,9 +168,9 @@ Definition is_nil (A : Set) (l : list A) :=
   | _ => false
   end.
 
-(* inefficient because Nle works by converting from ad to nat *)
+(* inefficient because Nleb works by converting from ad to nat *)
 Definition gc_x (x : ad) (cfg : BDDconfig) :=
-  if is_nil _ (fst (snd (snd cfg))) && Nle x (fst (snd (snd (snd cfg))))
+  if is_nil _ (fst (snd (snd cfg))) && Nleb x (fst (snd (snd (snd cfg))))
   then gc_0 cfg
   else gc_inf cfg.
 
@@ -638,7 +638,7 @@ Proof.
   rewrite (proj1 H) in H4.  discriminate.  unfold not in |- *; intro.
   unfold BDDstate_OK in H.  unfold BDDone in H.  rewrite <- H6 in H.
   unfold in_dom in H4.  rewrite (proj1 (proj2 H)) in H4.  discriminate.
-  split.  apply Nlt_lemma.  apply not_true_is_false.  unfold not in |- *; intro.
+  split.  apply Nltb_lebmma.  apply not_true_is_false.  unfold not in |- *; intro.
   unfold in_dom in H4.  rewrite (proj2 H00 _ H6) in H4.  discriminate.
   elim (option_sum _ (MapGet (BDDvar * (ad * ad)) (new_bs bs used) node)).  intro y.
   elim y; clear y; intros x y.  cut (used_node_bs bs used node).  intro.  elim H6.
@@ -1186,7 +1186,7 @@ Lemma gc_x_OK : forall x : ad, gc_OK (gc_x x).
 Proof.
   intros.  unfold gc_x in |- *.  unfold gc_OK in |- *.  intros.
   elim
-   (is_nil ad (fst (snd (snd cfg))) && Nle x (fst (snd (snd (snd cfg))))).
+   (is_nil ad (fst (snd (snd cfg))) && Nleb x (fst (snd (snd (snd cfg))))).
   apply gc_0_OK.  assumption.  assumption.  apply gc_inf_OK.  assumption.
   assumption.  
 Qed.
