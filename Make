@@ -1,3 +1,4 @@
+-R . smc
 alloc.v
 bool_fun.v
 config.v
