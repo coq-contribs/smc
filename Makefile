@@ -24,9 +24,9 @@
 #########################
 
 OCAMLLIBS:=
-COQLIBS:= -R . smc\
+COQLIBS:= -R . SMC\
   -R ../../Cachan/IntMap IntMap
-COQDOCLIBS:=-R . smc\
+COQDOCLIBS:=-R . SMC\
   -R ../../Cachan/IntMap IntMap
 
 ##########################
@@ -93,24 +93,7 @@ GFILES:=$(VFILES:.v=.g)
 HTMLFILES:=$(VFILES:.v=.html)
 GHTMLFILES:=$(VFILES:.v=.g.html)
 
-all: alloc.vo\
-  bool_fun.vo\
-  config.vo\
-  gc.vo\
-  make.vo\
-  misc.vo\
-  munew.vo\
-  muset.vo\
-  mu.vo\
-  myMap.vo\
-  neg.vo\
-  op.vo\
-  or.vo\
-  quant.vo\
-  smc.vo\
-  tauto.vo\
-  univ.vo
-
+all: $(VOFILES) 
 spec: $(VIFILES)
 
 gallina: $(GFILES)
@@ -138,8 +121,6 @@ all-gal.ps: $(VFILES)
 ####################
 
 .PHONY: all opt byte archclean clean install depend html
-
-.SUFFIXES: .v .vo .vi .g .html .tex .g.tex .g.html
 
 %.vo %.glob: %.v
 	$(COQC) -dump-glob $*.glob $(COQDEBUG) $(COQFLAGS) $*
