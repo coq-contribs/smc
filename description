@@ -9,3 +9,4 @@ Description: Provides BDD algorithms, a symbolic model checker for the modal
 Keywords: BDD binary decision diagram classical propositional logic
           garbage collection modal mu-calculus symbolic model checking
           reflection
+Category: Computer Science/Decision Procedures and Certified Algorithms/Decision procedures
