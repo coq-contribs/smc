@@ -31,7 +31,7 @@ Definition BDDcompare (x y : BDDvar) :=
   | N0, N0 => Datatypes.Eq
   | N0, Npos _ => Datatypes.Lt
   | Npos _, N0 => Datatypes.Gt
-  | Npos p1, Npos p2 => (p1 ?= p2)%positive Datatypes.Eq
+  | Npos p1, Npos p2 => Pcompare p1 p2 Datatypes.Eq
   end.
 
 Definition ad_S (a : ad) :=
@@ -285,7 +285,7 @@ Lemma ad_gt_1_lemma :
  forall x : ad, x <> N0 -> x <> Npos 1 -> Nleb (Npos 2) x = true.
 Proof.
   intros.  unfold Nleb in |- *.  unfold nat_of_N at 1 in |- *.  unfold nat_of_P in |- *.
-  unfold Pmult_nat in |- *.  unfold plus in |- *.  apply leb_correct.
+  unfold Pos.iter_op in |- *.  unfold plus in |- *.  apply leb_correct.
   apply nat_gt_1_lemma.  unfold not in |- *.  intro.  apply H.
   replace N0 with (N_of_nat 0).  rewrite <- H1.  symmetry  in |- *.
   apply N_of_nat_of_N.  reflexivity.  unfold not in |- *.  intro.  apply H0.
