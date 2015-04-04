@@ -18,7 +18,7 @@ Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
 Require Import ZArith NArith Nnat Ndec Ndigits.
-Require Import Allmaps.
+From IntMap Require Import Allmaps.
 Require Import List.
 Require Import Wf_nat.
 

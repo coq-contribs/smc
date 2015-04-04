@@ -18,8 +18,8 @@ Require Import Bool.
 Require Import Sumbool.
 Require Import Arith.
 Require Import ZArith NArith Nnat Ndec Ndigits.
-Require Import Map.
-Require Import Allmaps.
+From IntMap Require Import Map.
+From IntMap Require Import Allmaps.
 Require Import Relation_Definitions.
 Require Import List.
 

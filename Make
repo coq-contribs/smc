@@ -1,5 +1,4 @@
 -R . SMC
--R ../../Cachan/IntMap IntMap
 alloc.v
 bool_fun.v
 config.v
