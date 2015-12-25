@@ -199,10 +199,7 @@ Proof.
          (fun a0 : ad => pf (Ndouble_plus_one a0)) m1) 
       (a, y) H2).
   intro H3.  fold (aapp A) in H3.  rewrite (MapGet_M2_bit_0_if A m0 m1 (fp a)).
-  cut
-   (forall a : ad,
-    (fun a0 : ad => Ndiv2 (fp a0)) ((fun a0 : ad => pf (Ndouble a0)) a) =
-    a).
+  cut (forall a : ad, Ndiv2 (fp (pf (Ndouble a))) = a).
   intro H4.  elim
    (H (fun a0 : ad => pf (Ndouble a0)) (fun a0 : ad => Ndiv2 (fp a0)) H4
       a y H3).
@@ -222,10 +219,7 @@ Proof.
       a y H3).
   intro a0.  rewrite (H1 (Ndouble a0)).  apply Ndouble_div2.  intro H3.
   fold (aapp A) in H3.  rewrite (MapGet_M2_bit_0_if A m0 m1 (fp a)).
-  cut
-   (forall a : ad,
-    (fun a0 : ad => Ndiv2 (fp a0))
-      ((fun a0 : ad => pf (Ndouble_plus_one a0)) a) = a).
+  cut (forall a : ad, Ndiv2 (fp (pf (Ndouble_plus_one a))) = a).
   intro H4.  elim
    (H0 (fun a0 : ad => pf (Ndouble_plus_one a0))
       (fun a0 : ad => Ndiv2 (fp a0)) H4 a y H3).
@@ -529,17 +523,13 @@ Proof.
   simple induction m.  simpl in |- *.  intros pf fp l H a H0.  left; assumption.  simpl in |- *.  intros a a0 pf fp l H a1 H0.
   elim H0; intro H2.  rewrite <- H2.  rewrite (H a).  right.  unfold in_dom in |- *.
   simpl in |- *.  rewrite (Neqb_correct a).  split; reflexivity.  left; assumption.
-  simpl in |- *.  intros m0 H m1 H0 pf fp l H1 a H2.  cut
-   (forall a : ad,
-    (fun a0 : ad => Ndiv2 (fp a0))
-      ((fun a0 : ad => pf (Ndouble_plus_one a0)) a) = a).
+  simpl in |- *.  intros m0 H m1 H0 pf fp l H1 a H2.
+  cut (forall a : ad, Ndiv2 (fp (pf (Ndouble_plus_one a))) = a).
   intro H3.  elim
    (H0 (fun a0 : ad => pf (Ndouble_plus_one a0))
       (fun a0 : ad => Ndiv2 (fp a0)) _ H3 a H2).
-  intro H4.  cut
-   (forall a : ad,
-    (fun a0 : ad => Ndiv2 (fp a0)) ((fun a0 : ad => pf (Ndouble a0)) a) =
-    a).
+  intro H4.
+  cut (forall a : ad, Ndiv2 (fp (pf (Ndouble a))) = a).
   intro H5.  elim
    (H (fun a0 : ad => pf (Ndouble a0)) (fun a0 : ad => Ndiv2 (fp a0)) _
       H5 a H4).
@@ -574,10 +564,7 @@ Proof.
   apply Ndouble_div2.  assumption.  intros a H4.  apply H3.  unfold in_dom in |- *.
   rewrite (MapGet_M2_bit_0_0 _ (Ndouble a) (Ndouble_bit0 _) m0 m1).
   rewrite (Ndouble_div2 a).  assumption.  intros a H4.  unfold not in |- *; intro H5.
-  cut
-   (forall a : ad,
-    (fun a0 : ad => Ndiv2 (fp a0)) ((fun a0 : ad => pf (Ndouble a0)) a) =
-    a).
+  cut (forall a : ad, Ndiv2 (fp (pf (Ndouble a))) = a).
   intro H6.  elim
    (map_app_list1_lemma_2 m0 (fun a0 : ad => pf (Ndouble a0))
       (fun a0 : ad => Ndiv2 (fp a0)) l H6 _ H5).
@@ -703,14 +690,9 @@ Proof.
   elim (sumbool_of_bool (Neqb a (fp a1))).  intro y.  rewrite y in H3.
   discriminate.  intro y.  rewrite y in H3.  split.  assumption.  split.
   unfold in_dom in |- *.  simpl in |- *.  rewrite y.  reflexivity.  assumption.  intros.
-  simpl in H4.  cut
-   (forall a : ad,
-    (fun a0 : ad => Ndiv2 (fp a0)) ((fun a0 : ad => pf (Ndouble a0)) a) =
-    a).
-  cut
-   (forall a : ad,
-    (fun a0 : ad => Ndiv2 (fp a0))
-      ((fun a0 : ad => pf (Ndouble_plus_one a0)) a) = a).
+  simpl in H4.
+  cut (forall a : ad, Ndiv2 (fp (pf (Ndouble a))) = a).
+  cut (forall a : ad, Ndiv2 (fp (pf (Ndouble_plus_one a))) = a).
   intros.  elim
    (H0 m3 _ (fun a0 : ad => pf (Ndouble_plus_one a0))
       (fun a0 : ad => Ndiv2 (fp a0)) H5 _ H4).
@@ -757,14 +739,9 @@ Proof.
   rewrite (MapRemove_semantics A (M2 A m0 m1) a a1) in H4.
   elim (sumbool_of_bool (Neqb a a1)).  intro y.  rewrite y in H4.  discriminate.
   intro y.  rewrite y in H4.  unfold in_dom in |- *.  simpl in |- *.  rewrite y.  reflexivity.
-  intros.  simpl in |- *.  cut
-   (forall a : ad,
-    (fun a0 : ad => Ndiv2 (fp a0)) ((fun a0 : ad => pf (Ndouble a0)) a) =
-    a).
-  cut
-   (forall a : ad,
-    (fun a0 : ad => Ndiv2 (fp a0))
-      ((fun a0 : ad => pf (Ndouble_plus_one a0)) a) = a).
+  intros.  simpl in |- *.
+  cut (forall a : ad, Ndiv2 (fp (pf (Ndouble a))) = a).
+  cut (forall a : ad, Ndiv2 (fp (pf (Ndouble_plus_one a))) = a).
   intros.  apply H0 with (fp := fun a0 : ad => Ndiv2 (fp a0)).  intro.
   rewrite (H3 (Ndouble_plus_one a)).  apply Ndouble_plus_one_div2.  intros.
   unfold not in |- *.  intro.  elim
