@@ -152,10 +152,10 @@ Lemma Map_eq_complete :
 Proof.
   double induction m1 m2.  reflexivity.  simpl in |- *.  intros; discriminate.  simpl in |- *.
   intros; discriminate.  simpl in |- *.  intros; discriminate.  simpl in |- *.  intros.
-  elim a0.  elim a1.  rewrite (Neqb_complete a2 a).  reflexivity.  assumption.
+  elim a0.  elim a2.  rewrite (Neqb_complete a1 a).  reflexivity.  assumption.
   simpl in |- *.  intros; discriminate.  simpl in |- *.  intros; discriminate.  simpl in |- *.
   intros; discriminate.  simpl in |- *.  intros.  elim (andb_prop _ _ H3).  intros.
-  rewrite (H1 _ H5).  rewrite (H2 _ H4).  reflexivity.  
+  rewrite (H1 _ H4).  rewrite (H2 _ H5).  reflexivity.  
 Qed.
 
 Lemma Map_eq_correct : forall m : Map unit, Map_eq m m = true.
