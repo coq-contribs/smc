@@ -1,0 +1,3 @@
+[submodule "int-map"]
+	path = int-map
+	url = https://github.com/coq-contribs/int-map.git
