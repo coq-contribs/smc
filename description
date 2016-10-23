@@ -3,7 +3,7 @@ Title: BDD based symbolic model checker for the modal mu-calculus
 Author: Kumar Neeraj Verma
 Email: verma@lsv.ens-cachan.fr
 Institution: LSV/Dyade/INRIA/IIT Delhi
-Date: November 2002
+Date: 2002-11
 Description: Provides BDD algorithms, a symbolic model checker for the modal
              mu-calculus based on it, together with a garbage collector
 Keywords: BDD, binary decision diagrams, classical logic, propositional logic,
