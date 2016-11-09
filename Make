@@ -1,4 +1,4 @@
--R . SMC -R int-map IntMap
+-R . SMC
 alloc.v
 bool_fun.v
 config.v
