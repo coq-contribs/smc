@@ -8,6 +8,6 @@ Description: Provides BDD algorithms, a symbolic model checker for the modal
              mu-calculus based on it, together with a garbage collector
 Keywords: BDD, binary decision diagrams, classical logic, propositional logic,
           garbage collection, modal mu-calculus, model checking, symbolic model checking,
-	  reflection
+          reflection
 Require: IntMap
 Category: Computer Science/Decision Procedures and Certified Algorithms/Decision procedures
