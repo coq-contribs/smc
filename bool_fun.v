@@ -56,7 +56,7 @@ Definition bool_fun_if (x : BDDvar) (bf1 bf2 : bool_fun) : bool_fun :=
 Definition bool_fun_var (x : BDDvar) : bool_fun := fun vb : var_env => vb x.
 
 Definition augment (vb : var_env) (x : BDDvar) (b : bool) : var_env :=
-  fun y : BDDvar => if Neqb x y then b else vb y.
+  fun y : BDDvar => if N.eqb x y then b else vb y.
 
 Definition bool_fun_restrict (bf : bool_fun) (x : BDDvar) 
   (b : bool) : bool_fun := fun vb : var_env => bf (augment vb x b).
@@ -439,7 +439,7 @@ Qed.
 
 Lemma bool_fun_if_restrict :
  forall (bf1 bf2 : bool_fun) (x y : BDDvar) (b : bool),
- Neqb x y = false ->
+ N.eqb x y = false ->
  bool_fun_eq (bool_fun_restrict (bool_fun_if x bf1 bf2) y b)
    (bool_fun_if x (bool_fun_restrict bf1 y b) (bool_fun_restrict bf2 y b)).
 Proof.
@@ -470,7 +470,7 @@ Qed.
 
 Lemma bool_fun_forall_orthogonal :
  forall (x u : BDDvar) (bf1 bf2 : bool_fun),
- Neqb x u = false ->
+ N.eqb x u = false ->
  bool_fun_eq (bool_fun_forall u (bool_fun_if x bf1 bf2))
    (bool_fun_if x (bool_fun_forall u bf1) (bool_fun_forall u bf2)).
 Proof.
@@ -492,7 +492,7 @@ Lemma bool_fun_independent_if :
  forall (x y : BDDvar) (bf1 bf2 : bool_fun),
  bool_fun_independent bf1 x ->
  bool_fun_independent bf2 x ->
- Neqb x y = false -> bool_fun_independent (bool_fun_if y bf1 bf2) x.
+ N.eqb x y = false -> bool_fun_independent (bool_fun_if y bf1 bf2) x.
 Proof.
   intros.  unfold bool_fun_independent in |- *.  intro.
   apply

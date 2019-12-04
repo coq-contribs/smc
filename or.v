@@ -45,13 +45,13 @@ Fixpoint BDDor_1 (cfg : BDDconfig) (ul : list ad) (node1 node2 : ad)
       | None =>
           match MapGet _ (fst cfg) node1 with
           | None =>
-              if Neqb node1 BDDzero
+              if N.eqb node1 BDDzero
               then (BDDor_memo_put cfg node1 node2 node2, node2)
               else (BDDor_memo_put cfg node1 node2 node1, node1)
           | Some (x1, (l1, r1)) =>
               match MapGet _ (fst cfg) node2 with
               | None =>
-                  if Neqb node2 BDDzero
+                  if N.eqb node2 BDDzero
                   then (BDDor_memo_put cfg node1 node2 node1, node1)
                   else (BDDor_memo_put cfg node1 node2 node2, node2)
               | Some (x2, (l2, r2)) =>
@@ -1091,7 +1091,7 @@ Proof.
   reflexivity.  apply high_used' with (node := node1) (x := x1) (l := l1).  assumption.
   assumption.  assumption.  apply low_used' with (node := node1) (x := x1) (r := r1).
   assumption.  assumption.  assumption.  apply BDDcompare_sup_inf.  assumption.
-  intro y0.  rewrite y0.  elim (sumbool_of_bool (Neqb node2 BDDzero)).  intro y1.
+  intro y0.  rewrite y0.  elim (sumbool_of_bool (N.eqb node2 BDDzero)).  intro y1.
   rewrite y1.  cut (nodes_preserved cfg (BDDor_memo_put cfg node1 node2 node1)).
   intro.  cut (BDDconfig_OK (BDDor_memo_put cfg node1 node2 node1)).  intro.
   split.  assumption.  split.
@@ -1130,7 +1130,7 @@ Proof.
   apply bool_fun_or_preserves_eq.  apply bool_fun_eq_refl.
   apply bool_fun_eq_sym.  rewrite (Neqb_complete _ _ y1).
   apply bool_fun_of_BDD_zero.  assumption.  apply BDDorm_put_nodes_preserved.
-  intro y1.  rewrite y1.  cut (Neqb node2 BDDone = true).  intro.
+  intro y1.  rewrite y1.  cut (N.eqb node2 BDDone = true).  intro.
   cut (config_node_OK cfg node1).  cut (config_node_OK cfg node2).  intros.
   cut (nodes_preserved cfg (BDDor_memo_put cfg node1 node2 node2)).  intro.
   cut (BDDconfig_OK (BDDor_memo_put cfg node1 node2 node2)).  intro.  split.
@@ -1169,7 +1169,7 @@ Proof.
   assumption.  assumption.  assumption.  unfold in_dom in |- *.  rewrite y0.
   reflexivity.  assumption.  intro y0.  rewrite y0.
   cut (config_node_OK cfg node1).  cut (config_node_OK cfg node2).
-  intros H00 H01.  elim (sumbool_of_bool (Neqb node1 BDDzero)).  intro y1.
+  intros H00 H01.  elim (sumbool_of_bool (N.eqb node1 BDDzero)).  intro y1.
   rewrite y1.  cut (nodes_preserved cfg (BDDor_memo_put cfg node1 node2 node2)).
   intro.  cut (BDDconfig_OK (BDDor_memo_put cfg node1 node2 node2)).  intro.
   split.  assumption.  split.
@@ -1204,7 +1204,7 @@ Proof.
   apply bool_fun_or_preserves_eq.  apply bool_fun_eq_sym.
   rewrite (Neqb_complete _ _ y1).  apply bool_fun_of_BDD_zero.  assumption.
   apply bool_fun_eq_refl.  apply BDDorm_put_nodes_preserved.  intro y1.
-  rewrite y1.  cut (Neqb node1 BDDone = true).  intro.
+  rewrite y1.  cut (N.eqb node1 BDDone = true).  intro.
   cut (nodes_preserved cfg (BDDor_memo_put cfg node1 node2 node1)).  intro.
   cut (BDDconfig_OK (BDDor_memo_put cfg node1 node2 node1)).  intro.  split.
   assumption.  split.  apply nodes_preserved_config_node_OK with (cfg1 := cfg).

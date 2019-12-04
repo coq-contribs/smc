@@ -41,7 +41,7 @@ Fixpoint ad_list_neq (l1 l2 : list ad) {struct l2} : bool :=
   match l1, l2 with
   | nil, _ => true
   | _, nil => true
-  | a1 :: l1', a2 :: l2' => negb (Neqb a1 a2) && ad_list_neq l1' l2'
+  | a1 :: l1', a2 :: l2' => negb (N.eqb a1 a2) && ad_list_neq l1' l2'
   end.
 
 Definition bool_to_be (b : bool) :=
@@ -98,7 +98,7 @@ Fixpoint subst (x : BDDvar) (bex be : bool_expr) {struct be} : bool_expr :=
   match be with
   | Zero => Zero
   | One => One
-  | Var y => if Neqb x y then bex else be
+  | Var y => if N.eqb x y then bex else be
   | Neg be1 => Neg (subst x bex be1)
   | Or be1 be2 => Or (subst x bex be1) (subst x bex be2)
   | ANd be1 be2 => ANd (subst x bex be1) (subst x bex be2)
@@ -113,7 +113,7 @@ Lemma subst_ok :
 Proof.
   simple induction be.  compute in |- *.  reflexivity.  compute in |- *.  reflexivity.  simpl in |- *.
   unfold bool_fun_subst in |- *.  unfold bool_fun_eq in |- *.  unfold augment in |- *.
-  unfold bool_fun_var in |- *.  intros.  elim (Neqb x b).  reflexivity.  reflexivity.
+  unfold bool_fun_var in |- *.  intros.  elim (N.eqb x b).  reflexivity.  reflexivity.
   simpl in |- *.  intros.
   apply
    bool_fun_eq_trans
@@ -1082,7 +1082,7 @@ Hypothesis cfg_OK : BDDconfig_OK cfg.
 Hypothesis ul_OK : used_list_OK cfg ul.
 Hypothesis used : used_node' cfg ul node.
 
-Hypothesis xy_neq : Neqb x y = false.
+Hypothesis xy_neq : N.eqb x y = false.
 
 Definition BDDreplace :=
   match BDDvar_make gc cfg ul y with
@@ -1315,7 +1315,7 @@ Fixpoint be_x_free (x : BDDvar) (be : bool_expr) {struct be} : bool :=
   match be with
   | Zero => false
   | One => false
-  | Var y => Neqb x y
+  | Var y => N.eqb x y
   | Neg be1 => be_x_free x be1
   | Or be1 be2 => be_x_free x be1 || be_x_free x be2
   | ANd be1 be2 => be_x_free x be1 || be_x_free x be2
@@ -1326,10 +1326,10 @@ Fixpoint be_x_free (x : BDDvar) (be : bool_expr) {struct be} : bool :=
 Lemma subst_x_free :
  forall (be bex : bool_expr) (x y : BDDvar),
  be_x_free y (subst x bex be) = true ->
- be_x_free y be = true /\ Neqb x y = false \/ be_x_free y bex = true.
+ be_x_free y be = true /\ N.eqb x y = false \/ be_x_free y bex = true.
 Proof.
   simple induction be.  simpl in |- *.  intros.  discriminate.  simpl in |- *.  intros.  discriminate.
-  simpl in |- *.  intros.  elim (sumbool_of_bool (Neqb x b)).  intro y0.  rewrite y0 in H.
+  simpl in |- *.  intros.  elim (sumbool_of_bool (N.eqb x b)).  intro y0.  rewrite y0 in H.
   right.  assumption.  intro y0.  rewrite y0 in H.  simpl in H.  left.  split.
   assumption.  rewrite (Neqb_complete _ _ H).  assumption.  simpl in |- *.  intros.
   apply H.  assumption.  simpl in |- *.  intros.  elim (orb_prop _ _ H1).  intro.
@@ -1357,7 +1357,7 @@ Qed.
 Lemma restrict_x_free :
  forall (be : bool_expr) (x y : BDDvar) (b : bool),
  be_x_free y (restrict x b be) = true ->
- be_x_free y be = true /\ Neqb x y = false.
+ be_x_free y be = true /\ N.eqb x y = false.
 Proof.
   unfold restrict in |- *.  intros.  elim (subst_x_free be (bool_to_be b) x y H).
   trivial.  elim b.  simpl in |- *.  intro.  discriminate.  simpl in |- *.  intro.
@@ -1368,7 +1368,7 @@ Qed.
 Lemma replace_x_free :
  forall (be : bool_expr) (x y z : BDDvar),
  be_x_free z (replace x y be) = true ->
- be_x_free z be = true /\ Neqb x z = false \/ Neqb y z = true.
+ be_x_free z be = true /\ N.eqb x z = false \/ N.eqb y z = true.
 Proof.
   unfold replace in |- *.  intros.  elim (subst_x_free be (Var y) x z H).  intros.
   left.  assumption.  simpl in |- *.  intro.  right.  rewrite (Neqb_complete _ _ H0).
@@ -1416,7 +1416,7 @@ Qed.
 Lemma univ_x_free :
  forall (be : bool_expr) (x y : BDDvar),
  be_x_free y (forall_ x be) = true ->
- be_x_free y be = true /\ Neqb x y = false.
+ be_x_free y be = true /\ N.eqb x y = false.
 Proof.
   unfold forall_ in |- *.  intros.  elim (and_x_free _ _ _ H).  intro.
   elim (restrict_x_free _ _ _ _ H0).  auto.  intro.
@@ -1426,7 +1426,7 @@ Qed.
 Lemma ex_x_free :
  forall (be : bool_expr) (x y : BDDvar),
  be_x_free y (be_ex x be) = true ->
- be_x_free y be = true /\ Neqb x y = false.
+ be_x_free y be = true /\ N.eqb x y = false.
 Proof.
   unfold be_ex in |- *.  intros.  elim (and_x_free _ _ _ H).  intro.
   elim (restrict_x_free _ _ _ _ H0).  auto.  intro.
@@ -1748,7 +1748,7 @@ Fixpoint lx'_1 (n : nat) : list ad :=
 
 Definition lx := lx_1 N.
 Definition lx' := lx'_1 N.
-Lemma ap_neq_ap' : forall n : nat, n < N -> Neqb (ap n) (ap' n) = false.
+Lemma ap_neq_ap' : forall n : nat, n < N -> N.eqb (ap n) (ap' n) = false.
 Proof.
   simple induction n.  intros.  unfold ap, ap' in |- *.  rewrite <- (plus_n_O N).
   apply not_true_is_false.  unfold not in |- *; intro.  elim (lt_irrefl N).

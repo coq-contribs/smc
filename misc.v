@@ -37,7 +37,7 @@ Definition BDDcompare (x y : BDDvar) :=
 Definition ad_S (a : ad) :=
   match a with
   | N0 => Npos 1
-  | Npos p => Npos (Psucc p)
+  | Npos p => Npos (Pos.succ p)
   end.
 
 Definition max (m n : nat) := if leb m n then n else m.
@@ -144,10 +144,10 @@ Qed.
 Lemma andb3_lemma_1 :
  forall x x0 y y0 z z0 : ad,
  (x, (y, z)) <> (x0, (y0, z0)) ->
- Neqb x x0 && (Neqb y y0 && Neqb z z0) = false.
+ N.eqb x x0 && (N.eqb y y0 && N.eqb z z0) = false.
 Proof.
-  intros x x0 y y0 z z0 H.  elim (sumbool_of_bool (Neqb x x0)).  intro H0.
-  elim (sumbool_of_bool (Neqb y y0)).  intro H1.  elim (sumbool_of_bool (Neqb z z0)).
+  intros x x0 y y0 z z0 H.  elim (sumbool_of_bool (N.eqb x x0)).  intro H0.
+  elim (sumbool_of_bool (N.eqb y y0)).  intro H1.  elim (sumbool_of_bool (N.eqb z z0)).
   intro H2.  absurd ((x, (y, z)) = (x0, (y0, z0))).  assumption.  rewrite (Neqb_complete _ _ H0).
   rewrite (Neqb_complete _ _ H1).  rewrite (Neqb_complete _ _ H2).  reflexivity.
   intro H2.  rewrite H0.  rewrite H1.  rewrite H2.  reflexivity.  intro H1.  rewrite H0.
@@ -155,15 +155,15 @@ Proof.
 Qed.
 
 Lemma ad_S_le_then_neq :
- forall x y : ad, Nleb (ad_S x) y = true -> Neqb x y = false.
+ forall x y : ad, Nleb (ad_S x) y = true -> N.eqb x y = false.
 Proof.
-  intros.  cut (Neqb x y = true \/ Neqb x y = false).  intro.  elim H0.
+  intros.  cut (N.eqb x y = true \/ N.eqb x y = false).  intro.  elim H0.
   clear H0.  intro.  cut (x = y).  intro.  rewrite H1 in H.  unfold Nleb in H.
   rewrite (ad_S_is_S y) in H.
   cut (leb (S (nat_of_N y)) (nat_of_N y) = false).  rewrite H.  intro.
   discriminate H2.  cut (nat_of_N y < S (nat_of_N y)).  intro.
   apply leb_correct_conv.  assumption.  unfold lt in |- *.  trivial.
-  apply Neqb_complete.  assumption.  trivial. elim (Neqb x y). auto. auto.
+  apply Neqb_complete.  assumption.  trivial. elim (N.eqb x y). auto. auto.
 Qed.
 
 Lemma BDD_EGAL_correct : forall x : BDDvar, BDDcompare x x = Datatypes.Eq.
@@ -302,7 +302,7 @@ Proof.
 Qed.
 
 Lemma eq_ad_S_eq :
- forall a b : ad, Neqb (ad_S a) (ad_S b) = true -> Neqb a b = true.
+ forall a b : ad, N.eqb (ad_S a) (ad_S b) = true -> N.eqb a b = true.
 Proof.
   intros.  cut (ad_S a = ad_S b).  rewrite <- (N_of_nat_of_N (ad_S a)).
   rewrite <- (N_of_nat_of_N (ad_S b)).  rewrite (ad_S_is_S a).
@@ -313,7 +313,7 @@ Proof.
   apply nat_of_N_of_nat.  apply Neqb_complete.  assumption.
 Qed.
 
-Lemma ad_S_neq_N0 : forall a : ad, Neqb (ad_S a) N0 = false.
+Lemma ad_S_neq_N0 : forall a : ad, N.eqb (ad_S a) N0 = false.
 Proof.
   intros.  elim a.  reflexivity.  simpl in |- *.  reflexivity.
 Qed.

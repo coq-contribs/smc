@@ -72,7 +72,7 @@ Proof.
   apply mu_all_even.  apply H.  assumption.  apply mu_all_odd.  apply H.
   assumption.  intros.  simpl in H0.  elim b.  apply mu_ex_even.  apply H.
   assumption.  apply mu_ex_odd.  apply H.  assumption.  intros.  simpl in H0.
-  elim (sumbool_of_bool (Neqb P a)).  intro y.
+  elim (sumbool_of_bool (N.eqb P a)).  intro y.
   rewrite <- (Neqb_complete _ _ y).  elim b.  apply mu_mu_P_even.
   apply mu_mu_P_odd.  intro y.  rewrite y in H0.  simpl in H0.  elim b.
   apply mu_mu_Q_even.  assumption.  apply H.  assumption.  apply mu_mu_Q_odd.
@@ -122,7 +122,7 @@ Definition set_mu (f : Ensemble var_env'' -> Ensemble var_env'')
 Definition set_renv := ad -> Ensemble var_env''.
 Definition set_tenv := ad -> Relation var_env''.
 Definition sre_put (sre : set_renv) (P : ad) (S : Ensemble var_env'')
-  (Q : ad) := if Neqb P Q then S else sre Q.
+  (Q : ad) := if N.eqb P Q then S else sre Q.
 Definition te_ste_ok (te : trans_env) (ste : set_tenv) :=
   forall (a : ad) (ve1 ve2 : var_env''),
   new_t_to_rel (te a) ve1 ve2 <-> ste a ve1 ve2.
@@ -722,11 +722,11 @@ Proof.
   unfold be_eq in H14.  rewrite (H14 (var_env''_to_env' x0)).  split.  
   assumption.  assumption.  assumption.  assumption.  assumption.  assumption.
   assumption.  unfold ad_to_be_ok in |- *.  intros.  unfold re_put in |- *.
-  elim (sumbool_of_bool (Neqb a x1)).  intro y.  rewrite y.
+  elim (sumbool_of_bool (N.eqb a x1)).  intro y.  rewrite y.
   elim (mu_eval_lemma1 N te te_ok (mu_mu a m)).  intros.  apply H14.
   assumption.  assumption.  assumption.  intro y.  rewrite y.  apply H3.  
   unfold re_sre_ok in |- *.  unfold re_put, sre_put in |- *.  intro.
-  elim (sumbool_of_bool (Neqb a P1)).  intro y.  rewrite y.
+  elim (sumbool_of_bool (N.eqb a P1)).  intro y.  rewrite y.
   unfold bool_expr_to_var_env'' in |- *.  reflexivity.  intro y.  rewrite y.  apply H4. 
   assumption.
   unfold Included in |- *.  unfold In in |- *.  intros.  simpl in |- *.  unfold set_mu in |- *.  intros.
@@ -760,7 +760,7 @@ Proof.
                 (fun be : bool_expr => mu_eval N te m (re_put re a be)) Zero
                 (two_power N)).
   apply be_eq_le.  apply be_iter2n_2n.  intros.  apply H21.
-  unfold ad_to_be_eq, re_put in |- *.  intros.  elim (Neqb a x0).  assumption.  
+  unfold ad_to_be_eq, re_put in |- *.  intros.  elim (N.eqb a x0).  assumption.  
   apply be_eq_refl.  
   apply
    be_le_trans
@@ -771,7 +771,7 @@ Proof.
   apply be_iter1_le_preserved.  apply be_le_zero.  intros.
   unfold re_to_be_inc in H19.  apply H19.  assumption.  assumption.  
   apply be_eq_le.  apply be_eq_sym.  apply be_iter2n_2n.  intros.  apply H21.
-  unfold ad_to_be_eq, re_put in |- *.  intro.  elim (Neqb a x0).  assumption.  
+  unfold ad_to_be_eq, re_put in |- *.  intro.  elim (N.eqb a x0).  assumption.  
   apply be_eq_refl.  
   apply
    be_le_trans
@@ -780,7 +780,7 @@ Proof.
                 (fun be : bool_expr => mu_eval N te m (re_put re a be)) Be
                 (two_power N)).
   apply be_eq_le.  apply be_iter2n_2n.  intros.  apply H21.
-  unfold ad_to_be_eq, re_put in |- *.  intro.  elim (Neqb a x0).  assumption.  
+  unfold ad_to_be_eq, re_put in |- *.  intro.  elim (N.eqb a x0).  assumption.  
   apply be_eq_refl.  
   rewrite
    (be_iter1eq2 (fun be : bool_expr => mu_eval N te m (re_put re a be))
@@ -815,11 +815,11 @@ Proof.
   rewrite <- (H23 x0).  reflexivity.  
   apply be_ok_be_x_free with (be := mu_eval N te m (re_put re a Be)).
   elim (mu_eval_lemma1 N te te_ok m).  intros.  apply H20.
-  unfold ad_to_be_ok, re_put in |- *.  intros.  elim (Neqb a x2).  assumption.  
+  unfold ad_to_be_ok, re_put in |- *.  intros.  elim (N.eqb a x2).  assumption.  
   apply H3.  assumption.  assumption.  assumption.  assumption.  assumption.
   assumption.  assumption.  assumption.  unfold ad_to_be_ok, re_put in |- *.  intros.
-  elim (Neqb a x0).  assumption.  apply H3.  unfold re_sre_ok, re_put, sre_put in |- *.
-  intros.  elim (sumbool_of_bool (Neqb a P1)).  intro y0.  rewrite y0.
+  elim (N.eqb a x0).  assumption.  apply H3.  unfold re_sre_ok, re_put, sre_put in |- *.
+  intros.  elim (sumbool_of_bool (N.eqb a P1)).  intro y0.  rewrite y0.
   assumption.  intro y0.  rewrite y0.  apply H4.  
 Qed.
 

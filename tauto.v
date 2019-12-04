@@ -287,7 +287,7 @@ Proof.
 Qed.
 
 Definition is_tauto (be : bool_expr) :=
-  Neqb BDDone (snd (BDDof_bool_expr initBDDconfig nil be)).
+  N.eqb BDDone (snd (BDDof_bool_expr initBDDconfig nil be)).
 
 Lemma is_tauto_lemma :
  forall be : bool_expr,

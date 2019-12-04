@@ -162,11 +162,11 @@ Proof.
   unfold bool_fun_and in H.  elim (andb_prop _ _ H).  intros.
   elim (sumbool_of_bool (ve a)).  intro y.  rewrite <- H0.
   unfold bool_fun_restrict in |- *.  apply (bool_fun_of_be_ext be).  intros.
-  unfold augment in |- *.  elim (sumbool_of_bool (Neqb a x)).  intro y0.  rewrite y0.
+  unfold augment in |- *.  elim (sumbool_of_bool (N.eqb a x)).  intro y0.  rewrite y0.
   rewrite (Neqb_complete _ _ y0) in y.  assumption.  intro y0.  rewrite y0.
   reflexivity.  intro y.  rewrite <- H1.  unfold bool_fun_restrict in |- *.
   apply (bool_fun_of_be_ext be).  intros.  unfold augment in |- *.
-  elim (sumbool_of_bool (Neqb a x)).  intro y0.  rewrite y0.
+  elim (sumbool_of_bool (N.eqb a x)).  intro y0.  rewrite y0.
   rewrite (Neqb_complete _ _ y0) in y.  assumption.  intro y0.  rewrite y0.
   reflexivity.
 Qed.
@@ -202,7 +202,7 @@ Proof.
   unfold renfnad at 2 in |- *.  unfold renfnat in |- *.
   elim (sumbool_of_bool (leb n (nat_of_N b))).  intro y.  rewrite y.
   rewrite (N_of_nat_of_N b).  unfold ap in |- *.
-  elim (sumbool_of_bool (Neqb (N_of_nat n) b)).  intro y0.  rewrite y0.
+  elim (sumbool_of_bool (N.eqb (N_of_nat n) b)).  intro y0.  rewrite y0.
   unfold renfnad, ap' in |- *.  unfold renfnat in |- *.  rewrite <- (Neqb_complete _ _ y0).
   rewrite (nat_of_N_of_nat n).  replace (leb (S n) n) with false.
   rewrite (plus_comm n N).  reflexivity.  symmetry  in |- *.  apply leb_correct_conv.
@@ -214,7 +214,7 @@ Proof.
   rewrite (Neqb_correct b) in y0.  discriminate.  intro y.  rewrite y.
   unfold renfnad at 1 in |- *.  unfold renfnat at 1 in |- *.
   replace (leb (S n) (nat_of_N b)) with false.
-  replace (Neqb (ap n) (N_of_nat (nat_of_N b + N))) with false.
+  replace (N.eqb (ap n) (N_of_nat (nat_of_N b + N))) with false.
   unfold renfnad in |- *.  unfold renfnat in |- *.  rewrite y.  reflexivity.  symmetry  in |- *.
   apply not_true_is_false.  unfold not in |- *; intro.  unfold ap in H0.
   rewrite <- (nat_of_N_of_nat n) in H.
@@ -285,7 +285,7 @@ Proof.
   elim
    (H be
       (fun n : nat =>
-       match Neqb (N_of_nat n) a with
+       match N.eqb (N_of_nat n) a with
        | true => true
        | false => ve n
        end)).
@@ -293,36 +293,36 @@ Proof.
   split
    with
      (fun n : nat =>
-      match Neqb (N_of_nat n) a with
+      match N.eqb (N_of_nat n) a with
       | true => true
       | false => ve' n
       end).
-  split.  intros.  elim (sumbool_of_bool (Neqb (N_of_nat n) a)).  intro y.
+  split.  intros.  elim (sumbool_of_bool (N.eqb (N_of_nat n) a)).  intro y.
   rewrite <- (Neqb_complete _ _ y).  left.  reflexivity.  intro y.
   rewrite y in H3.  right.  apply H4; assumption.  
   replace
    (eval_be' be
       (var_env'_or ve
          (fun n : nat =>
-          match Neqb (N_of_nat n) a with
+          match N.eqb (N_of_nat n) a with
           | true => true
           | false => ve' n
           end))) with
    (eval_be' be
       (var_env'_or
          (fun n : nat =>
-          match Neqb (N_of_nat n) a with
+          match N.eqb (N_of_nat n) a with
           | true => true
           | false => ve n
           end) ve')).
   assumption.  unfold eval_be', var_env'_or in |- *.  apply (bool_fun_of_be_ext be).
   unfold var_env'_to_env in |- *.  intro.  rewrite (N_of_nat_of_N x).
-  elim (Neqb x a).  auto with bool.  auto with bool.  unfold eval_be' in |- *.
+  elim (N.eqb x a).  auto with bool.  auto with bool.  unfold eval_be' in |- *.
   replace
    (bool_fun_of_bool_expr (exl be l)
       (var_env'_to_env
          (fun n : nat =>
-          match Neqb (N_of_nat n) a with
+          match N.eqb (N_of_nat n) a with
           | true => true
           | false => ve n
           end))) with
@@ -330,14 +330,14 @@ Proof.
   assumption.  apply (bool_fun_of_be_ext (exl be l)).
   unfold augment, var_env'_to_env in |- *.  intro.  rewrite (N_of_nat_of_N x).
   rewrite (Neqb_comm a x).  reflexivity.  intros.
-  elim (sumbool_of_bool (Neqb (N_of_nat n) a)).  intro y.
+  elim (sumbool_of_bool (N.eqb (N_of_nat n) a)).  intro y.
   rewrite (Neqb_complete _ _ y).  apply no_dup_cons_no_in.  assumption.  intro y.
   rewrite y in H2.  simpl in H0.  exact (fun x => H0 _ H2 (or_intror _ x)).  
   apply no_dup_cons_no_dup with (a := a).  assumption.  
   elim
    (H be
       (fun n : nat =>
-       match Neqb (N_of_nat n) a with
+       match N.eqb (N_of_nat n) a with
        | true => false
        | false => ve n
        end)).
@@ -345,14 +345,14 @@ Proof.
   clear H2.  split with ve'.  split.  intros.  right.  apply H3.  assumption.
   rewrite <- H4.  unfold eval_be' in |- *.  apply (bool_fun_of_be_ext be).
   unfold var_env'_to_env, var_env'_or in |- *.  intro.  rewrite (N_of_nat_of_N x).
-  elim (sumbool_of_bool (Neqb x a)).  intro y.  rewrite y.  simpl in |- *.
+  elim (sumbool_of_bool (N.eqb x a)).  intro y.  rewrite y.  simpl in |- *.
   rewrite (Neqb_complete _ _ y).  elim (sumbool_of_bool (ve (nat_of_N a))).
   intro y0.  elim (H0 _ y0).  rewrite (N_of_nat_of_N a).  left.  reflexivity.  
   intro y0.  rewrite y0.  reflexivity.  intro y.  rewrite y.  reflexivity.  
   rewrite <- H1.  unfold eval_be' in |- *.  apply (bool_fun_of_be_ext (exl be l)).
   unfold var_env'_to_env, augment in |- *.  intro.  rewrite (N_of_nat_of_N x).
   rewrite (Neqb_comm a x).  reflexivity.  intros.
-  elim (sumbool_of_bool (Neqb (N_of_nat n) a)).  intro y.
+  elim (sumbool_of_bool (N.eqb (N_of_nat n) a)).  intro y.
   rewrite (Neqb_complete _ _ y).  apply no_dup_cons_no_in.  assumption.  intro y.
   rewrite y in H2.  exact (fun x => H0 _ H2 (or_intror _ x)).  
   apply no_dup_cons_no_dup with (a := a).  assumption.  intros.  elim H1; clear H1.
@@ -363,7 +363,7 @@ Proof.
   elim
    (H be
       (fun n : nat =>
-       match Neqb (N_of_nat n) a with
+       match N.eqb (N_of_nat n) a with
        | true => true
        | false => ve n
        end)).
@@ -373,47 +373,47 @@ Proof.
    with
    (eval_be' (exl be l)
       (fun n : nat =>
-       match Neqb (N_of_nat n) a with
+       match N.eqb (N_of_nat n) a with
        | true => true
        | false => ve n
        end)).
   apply H4.  split
    with
      (fun n : nat =>
-      match Neqb (N_of_nat n) a with
+      match N.eqb (N_of_nat n) a with
       | true => false
       | false => ve' n
       end).
-  split.  intros.  elim (sumbool_of_bool (Neqb (N_of_nat n) a)).  intro y0.
+  split.  intros.  elim (sumbool_of_bool (N.eqb (N_of_nat n) a)).  intro y0.
   rewrite y0 in H.  discriminate.  intro y0.  rewrite y0 in H.  elim (H2 _ H).
   intro.  rewrite <- H1 in y0.  rewrite (Neqb_correct a) in y0.  discriminate.
   auto.  replace
    (eval_be' be
       (var_env'_or
          (fun n : nat =>
-          match Neqb (N_of_nat n) a with
+          match N.eqb (N_of_nat n) a with
           | true => true
           | false => ve n
           end)
          (fun n : nat =>
-          match Neqb (N_of_nat n) a with
+          match N.eqb (N_of_nat n) a with
           | true => false
           | false => ve' n
           end))) with (eval_be' be (var_env'_or ve ve')).
   assumption.  unfold eval_be' in |- *.  apply (bool_fun_of_be_ext be).  intro x.
   unfold var_env'_to_env, var_env'_or in |- *.  rewrite (N_of_nat_of_N x).
-  elim (sumbool_of_bool (Neqb x a)).  intro y0.  rewrite y0.
+  elim (sumbool_of_bool (N.eqb x a)).  intro y0.  rewrite y0.
   rewrite (Neqb_complete _ _ y0).  rewrite y.  auto with bool.  intro y0.
   rewrite y0.  reflexivity.  unfold eval_be' in |- *.
   apply (bool_fun_of_be_ext (exl be l)).  unfold var_env'_to_env, augment in |- *.
   intros.  rewrite (N_of_nat_of_N x).  rewrite (Neqb_comm a x).  reflexivity.
-  intros.  elim (sumbool_of_bool (Neqb (N_of_nat n) a)).  intro y0.
+  intros.  elim (sumbool_of_bool (N.eqb (N_of_nat n) a)).  intro y0.
   rewrite (Neqb_complete _ _ y0).  apply no_dup_cons_no_in.  assumption.
   intro y0.  rewrite y0 in H1.  exact (fun x => H0 _ H1 (or_intror _ x)).  
   apply no_dup_cons_no_dup with (a := a).  assumption.  intro y.  elim (H be ve).
   intros.  clear H H1.  apply orb_true_intro.  right.  rewrite <- H4.
   unfold eval_be' in |- *.  apply (bool_fun_of_be_ext (exl be l)).
-  unfold augment, var_env'_to_env in |- *.  intro.  elim (sumbool_of_bool (Neqb a x)).
+  unfold augment, var_env'_to_env in |- *.  intro.  elim (sumbool_of_bool (N.eqb a x)).
   intro y0.  rewrite y0.  symmetry  in |- *.  rewrite <- (Neqb_complete _ _ y0).
   apply not_true_is_false.  unfold not in |- *; intro.  apply (H0 _ H).  left.
   symmetry  in |- *.  apply N_of_nat_of_N.  intro y0.  rewrite y0.  reflexivity.
@@ -455,19 +455,19 @@ Proof.
    (eval_be' be
       (var_env'_or
          (fun n : nat =>
-          match Neqb (N_of_nat n) a with
+          match N.eqb (N_of_nat n) a with
           | true => true
           | false => ve n
           end)
          (fun n : nat =>
-          match Neqb (N_of_nat n) a with
+          match N.eqb (N_of_nat n) a with
           | true => false
           | false => ve' n
           end))).
   elim
    (H be
       (fun n : nat =>
-       match Neqb (N_of_nat n) a with
+       match N.eqb (N_of_nat n) a with
        | true => true
        | false => ve n
        end)).
@@ -476,28 +476,28 @@ Proof.
    (bool_fun_of_bool_expr (univl be l)
       (var_env'_to_env
          (fun n : nat =>
-          match Neqb (N_of_nat n) a with
+          match N.eqb (N_of_nat n) a with
           | true => true
           | false => ve n
           end))) with
    (bool_fun_of_bool_expr (univl be l)
       (fun y : BDDvar =>
-       match Neqb a y with
+       match N.eqb a y with
        | true => true
        | false => var_env'_to_env ve y
        end)).
   assumption.  apply (bool_fun_of_be_ext (univl be l)).  intros.
   unfold var_env'_to_env in |- *.  rewrite (N_of_nat_of_N x).
   rewrite (Neqb_comm a x).  reflexivity.  intros.
-  elim (sumbool_of_bool (Neqb (N_of_nat n) a)).  intro y0.  rewrite y0 in H4.
+  elim (sumbool_of_bool (N.eqb (N_of_nat n) a)).  intro y0.  rewrite y0 in H4.
   discriminate.  intro y0.  rewrite y0 in H4.  elim (H2 _ H4).  intro.
   rewrite <- H5 in y0.  rewrite (Neqb_correct a) in y0.  discriminate.
-  trivial.  intros.  elim (sumbool_of_bool (Neqb (N_of_nat n) a)).  intro y0.
+  trivial.  intros.  elim (sumbool_of_bool (N.eqb (N_of_nat n) a)).  intro y0.
   apply no_dup_cons_no_in.  rewrite (Neqb_complete _ _ y0).  assumption.  
   intro y0.  rewrite y0 in H1.  unfold not in |- *; intro.  apply (H0 _ H1).  auto.  
   apply no_dup_cons_no_dup with (a := a).  assumption.  unfold eval_be' in |- *.
   apply (bool_fun_of_be_ext be).  intros.  unfold var_env'_to_env, var_env'_or in |- *.
-  rewrite (N_of_nat_of_N x).  elim (sumbool_of_bool (Neqb x a)).  intro y0.
+  rewrite (N_of_nat_of_N x).  elim (sumbool_of_bool (N.eqb x a)).  intro y0.
   rewrite y0.  simpl in |- *.  rewrite (Neqb_complete _ _ y0).  rewrite y.
   auto with bool.  intro y0.  rewrite y0.  reflexivity.  intro y.  elim (H be ve).
   intros.  clear H4.  apply H3.  unfold eval_be' in |- *.
@@ -511,7 +511,7 @@ Proof.
   elim
    (H be
       (fun n : nat =>
-       match Neqb (N_of_nat n) a with
+       match N.eqb (N_of_nat n) a with
        | true => true
        | false => ve n
        end)).
@@ -521,7 +521,7 @@ Proof.
    with
    (eval_be' (univl be l)
       (fun n : nat =>
-       match Neqb (N_of_nat n) a with
+       match N.eqb (N_of_nat n) a with
        | true => true
        | false => ve n
        end)).
@@ -530,27 +530,27 @@ Proof.
    (eval_be' be
       (var_env'_or
          (fun n : nat =>
-          match Neqb (N_of_nat n) a with
+          match N.eqb (N_of_nat n) a with
           | true => true
           | false => ve n
           end) ve')) with
    (eval_be' be
       (var_env'_or ve
          (fun n : nat =>
-          match Neqb (N_of_nat n) a with
+          match N.eqb (N_of_nat n) a with
           | true => true
           | false => ve' n
           end))).
-  apply H1.  intros.  elim (sumbool_of_bool (Neqb (N_of_nat n) a)).  intro y.
+  apply H1.  intros.  elim (sumbool_of_bool (N.eqb (N_of_nat n) a)).  intro y.
   left.  rewrite (Neqb_complete _ _ y).  reflexivity.  intro y.
   rewrite y in H4.  right.  apply H2.  assumption.  unfold eval_be' in |- *.
   apply (bool_fun_of_be_ext be).  intros.  unfold var_env'_to_env, var_env'_or in |- *.
-  rewrite (N_of_nat_of_N x).  elim (sumbool_of_bool (Neqb x a)).  intro y.
+  rewrite (N_of_nat_of_N x).  elim (sumbool_of_bool (N.eqb x a)).  intro y.
   rewrite y.  auto with bool.  intro y.  rewrite y.  reflexivity.
   unfold eval_be' in |- *.  unfold var_env'_to_env in |- *.
   apply (bool_fun_of_be_ext (univl be l)).  intro.  rewrite (N_of_nat_of_N x).
   unfold augment in |- *.  rewrite (Neqb_comm a x).  reflexivity.  intros.
-  elim (sumbool_of_bool (Neqb (N_of_nat n) a)).  intro y.
+  elim (sumbool_of_bool (N.eqb (N_of_nat n) a)).  intro y.
   apply no_dup_cons_no_in.  rewrite (Neqb_complete _ _ y).  assumption.  
   intro y.  rewrite y in H2.  exact (fun x => H0 _ H2 (or_intror _ x)).  
   apply no_dup_cons_no_dup with (a := a).  assumption.  unfold bool_fun_restrict in |- *.
@@ -560,7 +560,7 @@ Proof.
    with (eval_be' (univl be l) ve).
   apply H3.  intros.  apply H1.  intros.  auto.  unfold eval_be' in |- *.
   apply (bool_fun_of_be_ext (univl be l)).  intro.
-  unfold var_env'_to_env, augment in |- *.  elim (sumbool_of_bool (Neqb a x)).  intro y.
+  unfold var_env'_to_env, augment in |- *.  elim (sumbool_of_bool (N.eqb a x)).  intro y.
   rewrite y.  rewrite <- (Neqb_complete _ _ y).  apply not_true_is_false.
   unfold not in |- *.  intro.  elim (H0 (nat_of_N a)).  assumption.  left.
   rewrite (N_of_nat_of_N a).  reflexivity.  intro y.  rewrite y.  reflexivity.

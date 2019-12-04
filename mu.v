@@ -131,18 +131,18 @@ Proof.
       m1).
   unfold in_dom in |- *.  rewrite (Ndouble_plus_one_div2 x).  trivial.  apply H1.
   intro.  cut
-   (match MapGet A (M2 A m0 m1) (Ndouble x) with
+   (match MapGet A (M2 A m0 m1) (N.double x) with
     | None => false
     | Some _ => true
     end = false).
-  rewrite (MapGet_M2_bit_0_0 A (Ndouble x) (Ndouble_bit0 x) m0 m1).
+  rewrite (MapGet_M2_bit_0_0 A (N.double x) (Ndouble_bit0 x) m0 m1).
   unfold in_dom in |- *.  rewrite (Ndouble_div2 x).  trivial.  apply H1.
 Qed.
 
 Fixpoint Map_eq (m1 m2 : Map unit) {struct m2} : bool :=
   match m1, m2 with
   | M0, M0 => true
-  | M1 a1 _, M1 a2 _ => Neqb a1 a2
+  | M1 a1 _, M1 a2 _ => N.eqb a1 a2
   | M2 m1 m1', M2 m2 m2' => Map_eq m1 m2 && Map_eq m1' m2'
   | _, _ => false
   end.
@@ -325,7 +325,7 @@ Proof.
   unfold In in |- *.  unfold Evar_env'', Evar_env''ntoSn in |- *.  split.  apply MapPut_canon.
   exact (proj1 H0).  elim H0.  clear H0.  intro.  clear H0.  intros.
   unfold var_lu in H1.  elim (andb_false_elim _ _ H1).  intro y.
-  cut (Neqb (N_of_nat U) x = false).  intro.  unfold in_dom in |- *.
+  cut (N.eqb (N_of_nat U) x = false).  intro.  unfold in_dom in |- *.
   rewrite (MapPut_semantics unit ve (N_of_nat U) tt x).  rewrite H2.
   unfold in_dom in H0.  apply H0.  unfold var_lu in |- *.  rewrite y.  reflexivity.
   apply not_true_is_false.  unfold not in |- *; intro.
@@ -335,7 +335,7 @@ Proof.
   rewrite (nat_of_N_of_nat U).  apply leb_correct.  assumption.
   simpl in |- *.  intro y.  unfold in_dom in |- *.
   rewrite (MapPut_semantics unit ve (N_of_nat U) tt x).
-  cut (Neqb (N_of_nat U) x = false).  intro.  rewrite H2.  unfold in_dom in H0.
+  cut (N.eqb (N_of_nat U) x = false).  intro.  rewrite H2.  unfold in_dom in H0.
   apply H0.  unfold var_lu in |- *.  replace (leb (S (nat_of_N x)) U) with false.
   elim (leb L (nat_of_N x)).  reflexivity.  reflexivity.  symmetry  in |- *.
   apply not_true_is_false.  unfold not in |- *; intro.
@@ -462,7 +462,7 @@ Proof.
   unfold Evar_env''LU in |- *.  unfold Evar_env'' in |- *.  split.  apply MapRemove_canon.
   exact (proj1 H).  intros.  unfold in_dom in |- *.
   rewrite (MapRemove_semantics unit ve (N_of_nat U) x).
-  elim (sumbool_of_bool (Neqb (N_of_nat U) x)).  intro y.  rewrite y.
+  elim (sumbool_of_bool (N.eqb (N_of_nat U) x)).  intro y.  rewrite y.
   reflexivity.  intro y.  rewrite y.  unfold in_dom in H.  apply (proj2 H).
   unfold var_lu in |- *.  unfold var_lu in H1.  elim (andb_false_elim _ _ H1).  intro y0.
   rewrite y0.  reflexivity.  intro y0.
@@ -482,7 +482,7 @@ Proof.
   rewrite
    (MapPut_semantics unit (MapRemove unit ve (N_of_nat U)) 
       (N_of_nat U) tt a).
-  elim H; intros.  elim (sumbool_of_bool (Neqb (N_of_nat U) a)).  intro y.
+  elim H; intros.  elim (sumbool_of_bool (N.eqb (N_of_nat U) a)).  intro y.
   rewrite y.  unfold in_dom in H0.  rewrite (Neqb_complete _ _ y) in H0.
   elim (option_sum _ (MapGet unit ve a)).  intro y0.  elim y0.  intro x.  elim x.
   intros y1.  rewrite y1.  reflexivity.  intro y0.  rewrite y0 in H0.  discriminate.
@@ -501,7 +501,7 @@ Proof.
   split.  exact (proj1 H).  intros.  unfold var_lu in H1.
   elim (andb_false_elim _ _ H1).  intro y.  apply (proj2 H).  unfold var_lu in |- *.
   rewrite y.  reflexivity.  intro y.
-  elim (sumbool_of_bool (Neqb x (N_of_nat U))).  intro y0.
+  elim (sumbool_of_bool (N.eqb x (N_of_nat U))).  intro y0.
   rewrite <- (Neqb_complete _ _ y0) in H0.  assumption.  intro y0.
   apply (proj2 H).  unfold var_lu in |- *.
   replace (leb (S (nat_of_N x)) (S U)) with false.
@@ -747,7 +747,7 @@ Proof.
   split.  rewrite H1.  fold (Evar_env''ntoSn (L + n0) x) in |- *.
   apply Evar_env''ntoSn_lemma.  apply le_plus_l.  exact (proj1 H2).  intros.
   rewrite (MapPut_semantics unit x (N_of_nat (L + n0)) tt x0).
-  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y0.
+  elim (sumbool_of_bool (N.eqb (N_of_nat (L + n0)) x0)).  intro y0.
   rewrite y0.  rewrite <- (Neqb_complete _ _ y0).
   rewrite (nat_of_N_of_nat (L + n0)).  rewrite y.  reflexivity.  intro y0.
   rewrite y0.  unfold in_dom in H2.  apply (proj2 H2).
@@ -762,7 +762,7 @@ Proof.
   exact (proj1 (proj1 H2)).  intros.  unfold in_dom in |- *.
   rewrite (MapRemove_semantics unit x (N_of_nat (L + n0)) x0).
   rewrite H1 in H3.
-  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y0.
+  elim (sumbool_of_bool (N.eqb (N_of_nat (L + n0)) x0)).  intro y0.
   rewrite y0.  reflexivity.  intro y0.  rewrite y0.  unfold Evar_env'' in H2.
   unfold In in H2.  unfold in_dom in H2.  apply (proj2 (proj1 H2)).
   apply not_true_is_false.  unfold not in |- *.  intro.  unfold var_lu in H4.
@@ -779,7 +779,7 @@ Proof.
   apply leb_complete.  assumption.  intros.  unfold in_dom in |- *.
   rewrite (MapRemove_semantics unit x (N_of_nat (L + n0)) x0).
   rewrite H1 in H3.  elim (andb_prop _ _ H3).  intros.
-  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y0.
+  elim (sumbool_of_bool (N.eqb (N_of_nat (L + n0)) x0)).  intro y0.
   rewrite y0.  rewrite <- (Neqb_complete _ _ y0).
   rewrite (nat_of_N_of_nat (L + n0)).  rewrite y.  reflexivity.  intro y0.
   rewrite y0.  unfold in_dom in H2.  apply (proj2 H2).  unfold var_lu in |- *.
@@ -811,7 +811,7 @@ Proof.
   split.  rewrite H1.  fold (Evar_env''ntoSn (L + n0) x) in |- *.
   apply Evar_env''ntoSn_lemma.  apply le_plus_l.  exact (proj1 y).  intros.
   rewrite (MapPut_semantics unit x (N_of_nat (L + n0)) tt x0).
-  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y1.
+  elim (sumbool_of_bool (N.eqb (N_of_nat (L + n0)) x0)).  intro y1.
   rewrite y1.  rewrite <- (Neqb_complete _ _ y1).
   rewrite (nat_of_N_of_nat (L + n0)).  rewrite y0.  reflexivity.  intro y1.
   rewrite y1.  unfold in_dom in y.  apply (proj2 y).
@@ -826,7 +826,7 @@ Proof.
   exact (proj1 (proj1 y)).  intros.  unfold in_dom in |- *.
   rewrite (MapRemove_semantics unit x (N_of_nat (L + n0)) x0).
   rewrite H1 in H2.
-  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y1.
+  elim (sumbool_of_bool (N.eqb (N_of_nat (L + n0)) x0)).  intro y1.
   rewrite y1.  reflexivity.  intro y1.  rewrite y1.  unfold Evar_env'' in y.
   unfold In in y.  unfold in_dom in y.  apply (proj2 (proj1 y)).
   apply not_true_is_false.  unfold not in |- *.  intro.  unfold var_lu in H3.
@@ -843,7 +843,7 @@ Proof.
   apply leb_complete.  assumption.  intros.  unfold in_dom in |- *.
   rewrite (MapRemove_semantics unit x (N_of_nat (L + n0)) x0).
   rewrite H1 in H2.  elim (andb_prop _ _ H2).  intros.
-  elim (sumbool_of_bool (Neqb (N_of_nat (L + n0)) x0)).  intro y1.
+  elim (sumbool_of_bool (N.eqb (N_of_nat (L + n0)) x0)).  intro y1.
   rewrite y1.  rewrite <- (Neqb_complete _ _ y1).
   rewrite (nat_of_N_of_nat (L + n0)).  rewrite y0.  reflexivity.  intro y1.
   rewrite y1.  unfold in_dom in y.  apply (proj2 y).  unfold var_lu in |- *.
@@ -1087,7 +1087,7 @@ Definition Brel_env := Map ad.
 Definition trans_env := ad -> bool_expr.
 Definition Btrans_env := Map ad.
 Definition re_put (re : rel_env) (x : ad) (be : bool_expr) : rel_env :=
-  fun y => if Neqb x y then be else re y.
+  fun y => if N.eqb x y then be else re y.
 
 Inductive mu_form : Set :=
   | mu_0 : mu_form
@@ -1110,7 +1110,7 @@ Fixpoint mu_rel_free (P : ad) (f : mu_form) {struct f} : bool :=
   | mu_0 => false
   | mu_1 => false
   | mu_ap _ => false
-  | mu_rel_var Q => Neqb P Q
+  | mu_rel_var Q => N.eqb P Q
   | mu_neg g => mu_rel_free P g
   | mu_and g h => mu_rel_free P g || mu_rel_free P h
   | mu_or g h => mu_rel_free P g || mu_rel_free P h
@@ -1118,7 +1118,7 @@ Fixpoint mu_rel_free (P : ad) (f : mu_form) {struct f} : bool :=
   | mu_iff g h => mu_rel_free P g || mu_rel_free P h
   | mu_all t g => mu_rel_free P g
   | mu_ex t g => mu_rel_free P g
-  | mu_mu Q g => negb (Neqb P Q) && mu_rel_free P g
+  | mu_mu Q g => negb (N.eqb P Q) && mu_rel_free P g
   end.
 
 (* (mu_t_free t f) means that there is a free occurrence of the transition
@@ -1134,8 +1134,8 @@ Fixpoint mu_t_free (t : ad) (f : mu_form) {struct f} : bool :=
   | mu_or g h => mu_t_free t g || mu_t_free t h
   | mu_impl g h => mu_t_free t g || mu_t_free t h
   | mu_iff g h => mu_t_free t g || mu_t_free t h
-  | mu_all u g => Neqb t u || mu_t_free t g
-  | mu_ex u g => Neqb t u || mu_t_free t g
+  | mu_all u g => N.eqb t u || mu_t_free t g
+  | mu_ex u g => N.eqb t u || mu_t_free t g
   | mu_mu Q g => mu_t_free t g
   end.
 
@@ -1524,7 +1524,7 @@ Fixpoint BDDiter (f : BDDconfig -> ad -> BDDconfig * ad)
   | S m =>
       match f cfg node with
       | (cfg1, node1) =>
-          if Neqb node node1 then (cfg1, node1) else BDDiter f cfg1 node1 m
+          if N.eqb node node1 then (cfg1, node1) else BDDiter f cfg1 node1 m
       end
   end.
 
@@ -1534,7 +1534,7 @@ Fixpoint BDDiter2n (f : BDDconfig -> ad -> BDDconfig * ad)
   match n with
   | O =>
       match f cfg node with
-      | (cfg1, node1) => (cfg1, node1, Neqb node node1)
+      | (cfg1, node1) => (cfg1, node1, N.eqb node node1)
       end
   | S m =>
       match BDDiter2n f cfg node m with
@@ -1544,7 +1544,7 @@ Fixpoint BDDiter2n (f : BDDconfig -> ad -> BDDconfig * ad)
   end.
 
 Definition cfgnode_eq (cfgnode1 cfgnode2 : BDDconfig * ad) :=
-  Neqb (snd cfgnode1) (snd cfgnode2).
+  N.eqb (snd cfgnode1) (snd cfgnode2).
 
 Lemma BDDiter_as_iter :
  forall (n : nat) (cfg : BDDconfig) (node : ad)
@@ -1614,7 +1614,7 @@ Inductive f_P_even (P : ad) : mu_form -> bool -> Prop :=
       f_P_even P (mu_rel_var Q) true
       (* one new clause added ... *)
   | mu_rel_var_odd :
-      forall Q : ad, Neqb P Q = false -> f_P_even P (mu_rel_var Q) false
+      forall Q : ad, N.eqb P Q = false -> f_P_even P (mu_rel_var Q) false
   | mu_neg_odd :
       forall f : mu_form, f_P_even P f true -> f_P_even P (mu_neg f) false
   | mu_neg_even :
@@ -1669,10 +1669,10 @@ Inductive f_P_even (P : ad) : mu_form -> bool -> Prop :=
   | mu_mu_P_odd : forall f : mu_form, f_P_even P (mu_mu P f) false
   | mu_mu_Q_even :
       forall (Q : ad) (f : mu_form),
-      Neqb P Q = false -> f_P_even P f true -> f_P_even P (mu_mu Q f) true
+      N.eqb P Q = false -> f_P_even P f true -> f_P_even P (mu_mu Q f) true
   | mu_mu_Q_odd :
       forall (Q : ad) (f : mu_form),
-      Neqb P Q = false -> f_P_even P f false -> f_P_even P (mu_mu Q f) false.
+      N.eqb P Q = false -> f_P_even P f false -> f_P_even P (mu_mu Q f) false.
 
 Inductive f_ok : mu_form -> Prop :=
   | mu_0_f_ok : f_ok mu_0
@@ -1785,7 +1785,7 @@ Lemma mu_all_bte_ok :
  f_bte_ok (mu_all t g) bte -> f_bte_ok g bte.
 Proof.
   intros.  unfold f_bte_ok in |- *.  intros.  apply H.  simpl in |- *.  rewrite H0.
-  elim (Neqb t0 t); reflexivity.
+  elim (N.eqb t0 t); reflexivity.
 Qed.
 
 Lemma mu_ex_bre_ok :
@@ -1800,7 +1800,7 @@ Lemma mu_ex_bte_ok :
  f_bte_ok (mu_ex t g) bte -> f_bte_ok g bte.
 Proof.
   intros.  unfold f_bte_ok in |- *.  intros.  apply H.  simpl in |- *.  rewrite H0.
-  elim (Neqb t0 t); reflexivity.
+  elim (N.eqb t0 t); reflexivity.
 Qed.
 
 Lemma mu_mu_bre_ok :
@@ -1809,7 +1809,7 @@ Lemma mu_mu_bre_ok :
 Proof.
   intros.  unfold f_bre_ok in |- *.  unfold in_dom in |- *.  intro.
   rewrite (MapPut_semantics ad bre P node P0).
-  elim (sumbool_of_bool (Neqb P P0)).  intro y.  rewrite y.  reflexivity.  
+  elim (sumbool_of_bool (N.eqb P P0)).  intro y.  rewrite y.  reflexivity.  
   intro y.  rewrite y.  intro.  unfold f_bre_ok in H.  unfold in_dom in H.
   apply H.  simpl in |- *.  rewrite (Neqb_comm P0 P).  rewrite y.  rewrite H0.
   reflexivity.
@@ -1878,7 +1878,7 @@ Lemma cfg_re_bre_ok_put :
  cfg_re_bre_ok cfg (re_put re P be) (MapPut _ bre P node).
 Proof.
   intros.  unfold cfg_re_bre_ok in |- *.  unfold re_put in |- *.  intros P0 node0.
-  rewrite (MapPut_semantics ad bre P node P0).  elim (Neqb P P0).  intro.
+  rewrite (MapPut_semantics ad bre P node P0).  elim (N.eqb P P0).  intro.
   inversion H1.  rewrite <- H3.  assumption.  intro.  apply H.  assumption.
 Qed.
 
@@ -1888,7 +1888,7 @@ Lemma cfg_ul_bre_ok_put :
  cfg_ul_bre_ok cfg (node :: ul) (MapPut _ bre P node).
 Proof.
   intros.  unfold cfg_ul_bre_ok in |- *.  intros P0 node0.
-  rewrite (MapPut_semantics _ bre P node).  elim (sumbool_of_bool (Neqb P P0)).
+  rewrite (MapPut_semantics _ bre P node).  elim (sumbool_of_bool (N.eqb P P0)).
   intro y.  rewrite y.  intros.  injection H0.  intros.  rewrite <- H1.
   apply used_node'_cons_node_ul.  intro y.  rewrite y.  intro.
   apply used_node'_cons_node'_ul.  apply H with (P := P0).  assumption.  
@@ -1989,7 +1989,7 @@ Proof.
   intros.
   elim (cfg_ul_te_bte_ok_preserved cfg cfg1 ul te bte H0 H15 H2 H5 H6 H16).
   intros.  split.  assumption.  split.  assumption.  split.  assumption.  
-  split.  assumption.  elim (sumbool_of_bool (Neqb node node1)).  intro y.
+  split.  assumption.  elim (sumbool_of_bool (N.eqb node node1)).  intro y.
   rewrite y.  symmetry  in |- *.  apply be_eq_dec_correct.
   apply bool_fun_eq_trans with (bf2 := bool_fun_of_BDD cfg node).
   apply bool_fun_eq_sym; assumption.
@@ -1999,7 +1999,7 @@ Proof.
   assumption.  assumption.  assumption.  apply used_node'_cons_node_ul.  
   assumption.  intro y.
   elim (sumbool_of_bool (be_eq_dec be (f g (re_put re P be)))).  intro y0.
-  cut (Neqb node node1 = true).  intro.  rewrite H24 in y.  discriminate.  
+  cut (N.eqb node node1 = true).  intro.  rewrite H24 in y.  discriminate.  
   apply BDDunique with (cfg := cfg1).  assumption.  
   apply used_node'_OK with (ul := node :: ul).  assumption.  
   apply used_nodes_preserved_list_OK with (cfg := cfg).  assumption.  assumption.  
@@ -2238,7 +2238,7 @@ Proof.
   assumption.  unfold re_to_be_inc in |- *.  split.  intros.  apply be_le_refl.  split.
   unfold re_to_be_dec in |- *.  intros.  apply be_le_refl.  intros.  apply be_eq_refl.
   simpl in |- *.  intros.  split.  intros.  apply H1.  split.  intros.
-  unfold re_to_be_inc in |- *.  intros.  unfold re_put in |- *.  elim (Neqb P a).  assumption.
+  unfold re_to_be_inc in |- *.  intros.  unfold re_put in |- *.  elim (N.eqb P a).  assumption.
   apply be_le_refl.  split.  intros.  inversion H1.  unfold re_to_be_dec in |- *.
   unfold re_put in |- *.  rewrite H3.  intros.  apply be_le_refl.  intros.
   apply H1.  simpl in |- *.  apply Neqb_correct.
@@ -2363,7 +2363,7 @@ Proof.
   fold (be_iter2n (fun be : bool_expr => mu_eval m (re_put re a be)) Zero N)
    in |- *.
   apply be_iter2n_prop_preserved.  apply zero_ok.  intros.  apply H6.
-  unfold re_put in |- *.  unfold ad_to_be_ok in |- *.  intros.  elim (Neqb a x).  assumption.  
+  unfold re_put in |- *.  unfold ad_to_be_ok in |- *.  intros.  elim (N.eqb a x).  assumption.  
   apply H.  split.
   intros.  unfold re_to_be_inc in |- *.  intros.
   fold
@@ -2377,26 +2377,26 @@ Proof.
   unfold re_to_be_inc in H2.  inversion H.  clear H12 H11 f0.
   apply be_eq_le.
   apply be_iter2n_eq_preserved_2.  apply be_eq_refl.  intros.
-  apply H9.  unfold ad_to_be_eq in |- *.  unfold re_put in |- *.  intro.  elim (Neqb a x).
+  apply H9.  unfold ad_to_be_eq in |- *.  unfold re_put in |- *.  intro.  elim (N.eqb a x).
   intros.  assumption.  intros.  apply be_eq_refl.  intros.  apply H9.
   unfold ad_to_be_eq1 in |- *. intros.
-  unfold re_put in |- *.  intro.  elim (Neqb a x).  apply H10.  reflexivity.
+  unfold re_put in |- *.  intro.  elim (N.eqb a x).  apply H10.  reflexivity.
   intros.  apply H9.  unfold ad_to_be_eq1 in |- *.  unfold re_put in |- *.  intro.
-  elim (Neqb a x).  intros.  assumption.  intros.  apply be_eq_refl.
+  elim (N.eqb a x).  intros.  assumption.  intros.  apply be_eq_refl.
   rename H13 into H14.
   apply be_iter2n_le_preserved.
   apply be_le_refl.  intros.  apply H9.  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.
-  intro.  elim (Neqb a x).  intros.  assumption.  intros.  apply be_eq_refl.
+  intro.  elim (N.eqb a x).  intros.  assumption.  intros.  apply be_eq_refl.
   intros.  apply H9.
-  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.  intro.  elim (Neqb a x).
+  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.  intro.  elim (N.eqb a x).
   intros.  assumption.  intros.  apply be_eq_refl.  intros.
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re P be1) a be2')).
   apply H2.  assumption.  assumption.  
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re a be2') P be1)).
   rename H13 into H15.
   apply be_eq_le.  apply H9.  unfold ad_to_be_eq1 in |- *.  intro.  unfold re_put in |- *.
-  elim (sumbool_of_bool (Neqb P x)).  intros y H16.  rewrite y.
-  cut (Neqb a x = false).
+  elim (sumbool_of_bool (N.eqb P x)).  intros y H16.  rewrite y.
+  cut (N.eqb a x = false).
   intro H17.
   rewrite H17.  apply be_eq_refl.  
   rewrite <- (Neqb_complete _ _ y).  rewrite (Neqb_comm a P).  assumption.  
@@ -2404,10 +2404,10 @@ Proof.
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re a be2') P be2)).
   apply H2.  assumption.  assumption.  apply be_eq_le.  apply H9.
   unfold ad_to_be_eq1 in |- *.  intro.  unfold re_put in |- *.
-  elim (sumbool_of_bool (Neqb P x)).
+  elim (sumbool_of_bool (N.eqb P x)).
   intros y H16.
   rewrite y.
-  cut (Neqb a x = false).
+  cut (N.eqb a x = false).
   intro H17.
   rewrite H17.  apply be_eq_refl.  
   rewrite <- (Neqb_complete _ _ y).  rewrite (Neqb_comm a P).  assumption.  
@@ -2424,12 +2424,12 @@ Proof.
       (fun be : bool_expr => mu_eval m (re_put (re_put re a be1) a be)) Zero
       N) in |- *.
   apply be_iter2n_eq_preserved_2.  apply be_eq_refl.  intros.
-  apply H9.  unfold ad_to_be_eq1 in |- *.  unfold re_put in |- *.  intro.  elim (Neqb a x).
+  apply H9.  unfold ad_to_be_eq1 in |- *.  unfold re_put in |- *.  intro.  elim (N.eqb a x).
   intros.  assumption.  intros.  apply be_eq_refl.  intros.  apply H9.
   unfold ad_to_be_eq1 in |- *.
-  unfold re_put in |- *.  intros.  elim (Neqb a x).  assumption.  apply be_eq_refl.
+  unfold re_put in |- *.  intros.  elim (N.eqb a x).  assumption.  apply be_eq_refl.
   intros.  apply H9.  unfold ad_to_be_eq1 in |- *.  unfold re_put in |- *.  intros.
-  elim (Neqb a x).  assumption.  apply be_eq_refl.
+  elim (N.eqb a x).  assumption.  apply be_eq_refl.
   fold
    (be_iter2n
       (fun be : bool_expr => mu_eval m (re_put (re_put re P be2) a be)) Zero
@@ -2440,15 +2440,15 @@ Proof.
       N) in |- *.
   apply be_iter2n_le_preserved.
   apply be_le_refl.  intros.  apply H9.  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.
-  intros.  elim (Neqb a x).  assumption.  apply be_eq_refl.  intros.  apply H9.
-  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.  intros.  elim (Neqb a x).
+  intros.  elim (N.eqb a x).  assumption.  apply be_eq_refl.  intros.  apply H9.
+  unfold re_put at 1 3 in |- *.  unfold ad_to_be_eq1 in |- *.  intros.  elim (N.eqb a x).
   assumption.  apply be_eq_refl.  intros.
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re P be2) a be2')).
   unfold re_to_be_inc in H2.  apply H2.  assumption.  assumption.
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re a be2') P be2)).
   apply be_eq_le.  apply H9.  unfold ad_to_be_eq1 in |- *.  intros.  unfold re_put in |- *.
-  elim (sumbool_of_bool (Neqb P x)).  intro y.  rewrite y.
-  cut (Neqb a x = false).
+  elim (sumbool_of_bool (N.eqb P x)).  intro y.  rewrite y.
+  cut (N.eqb a x = false).
   intro H17.
   rewrite H17.  apply be_eq_refl.
   rewrite <- (Neqb_complete _ _ y).  rewrite (Neqb_comm a P).  assumption.
@@ -2456,8 +2456,8 @@ Proof.
   apply be_le_trans with (be2 := mu_eval m (re_put (re_put re a be2') P be1)).
   apply H7.  assumption.  assumption.  apply be_eq_le.  apply H9.
   unfold ad_to_be_eq1 in |- *.  intros.  unfold re_put in |- *.
-  elim (sumbool_of_bool (Neqb P x)).  intro y.  rewrite y.
-  cut (Neqb a x = false).
+  elim (sumbool_of_bool (N.eqb P x)).  intro y.  rewrite y.
+  cut (N.eqb a x = false).
   intro H17.
   rewrite H17.  apply be_eq_refl.
   rewrite <- (Neqb_complete _ _ y).  rewrite (Neqb_comm a P).  assumption.
@@ -2467,10 +2467,10 @@ Proof.
   fold (be_iter2n (fun be : bool_expr => mu_eval m (re_put re2 a be)) Zero N)
    in |- *.
   apply be_iter2n_eq_preserved_2.  apply be_eq_refl. 
-  intros.  apply H9.  unfold ad_to_be_eq1, re_put in |- *.  intros.  elim (Neqb a x).
+  intros.  apply H9.  unfold ad_to_be_eq1, re_put in |- *.  intros.  elim (N.eqb a x).
   assumption.  apply be_eq_refl.  intros.  apply H9.  unfold ad_to_be_eq1, re_put in |- *.
-  intros.  elim (Neqb a x).  assumption.  apply be_eq_refl.  intros.  apply H9.
-  unfold ad_to_be_eq1, re_put in |- *.  intros.  elim (sumbool_of_bool (Neqb a x)).
+  intros.  elim (N.eqb a x).  assumption.  apply be_eq_refl.  intros.  apply H9.
+  unfold ad_to_be_eq1, re_put in |- *.  intros.  elim (sumbool_of_bool (N.eqb a x)).
   intro y.  rewrite y.  assumption.  intro y.  rewrite y.  apply H.  simpl in |- *.
   rewrite (Neqb_comm x a).  rewrite y.  rewrite H10.  reflexivity.  
 Qed.
@@ -2633,7 +2633,7 @@ Section Mu_eval_as_fix.
    forall be : bool_expr, be_ok (var_lu 0 N) be -> be_ok (var_lu 0 N) (mf be).
   Proof.
     unfold mf in |- *.  intros.  elim (mu_eval_lemma1 f).  intros.  apply H0.
-    unfold ad_to_be_ok, re_put in |- *.  intro.  elim (Neqb P x).  assumption.
+    unfold ad_to_be_ok, re_put in |- *.  intro.  elim (N.eqb P x).  assumption.
     apply re_ok.  assumption.  assumption.
   Qed.
 
@@ -2643,7 +2643,7 @@ Section Mu_eval_as_fix.
     unfold mf in |- *.  elim (mu_eval_lemma1 f).  intros.
     elim H0; intros H3 H2; elim H2; clear H2; intros H2 H5.
  
-    apply H5.  unfold ad_to_be_eq in |- *.  unfold re_put in |- *.  intro.  elim (Neqb P x).
+    apply H5.  unfold ad_to_be_eq in |- *.  unfold re_put in |- *.  intro.  elim (N.eqb P x).
     assumption.  apply be_eq_refl.  assumption.  assumption.  
   Qed.
  

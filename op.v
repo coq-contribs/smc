@@ -115,7 +115,7 @@ Proof.
 Qed.
 
 Lemma BDDneg_var_eq :
- Neqb (node_height (fst BDDneg) (snd BDDneg)) (node_height cfg node) = true.
+ N.eqb (node_height (fst BDDneg) (snd BDDneg)) (node_height cfg node) = true.
 Proof.
   unfold BDDneg in |- *.
   exact
